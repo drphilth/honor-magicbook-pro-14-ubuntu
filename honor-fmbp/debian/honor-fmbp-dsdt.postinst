@@ -1,0 +1,18 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        # Resolve the global/Chinese SKU once and point the canonical dsdt.aml symlink
+        # at it; the initramfs rebuild is left to the dpkg initramfs-tools trigger
+        # (#DEBHELPER# below), so --postinst skips update-initramfs here.
+        if [ -x /usr/sbin/honor-fmbp-dsdt-select ]; then
+            /usr/sbin/honor-fmbp-dsdt-select --postinst || \
+                echo "honor-fmbp-dsdt: SKU selection failed; DSDT override may be inactive" >&2
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

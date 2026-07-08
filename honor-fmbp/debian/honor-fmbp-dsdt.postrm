@@ -1,0 +1,17 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    remove|purge)
+        # The canonical symlink and the dracut acpi_table_dir are created at runtime by
+        # honor-fmbp-dsdt-select, so dpkg does not track them; drop the now-dangling link
+        # and the dir when the variants are removed (a later initramfs rebuild then drops
+        # the override on either generator).
+        rm -f /usr/share/honor-fmbp/dsdt.aml
+        rm -rf /usr/share/honor-fmbp/acpi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

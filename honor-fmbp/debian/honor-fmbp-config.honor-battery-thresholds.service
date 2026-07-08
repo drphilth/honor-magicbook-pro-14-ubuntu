@@ -1,0 +1,19 @@
+[Unit]
+Description=Restore battery charge thresholds (HONOR FMB-P)
+Documentation=file:/usr/share/doc/honor-fmbp-config/README.Debian
+After=systemd-modules-load.service
+# huawei-wmi only exposes this on the FMB-P (and only enforces on BIOS >= 1.16);
+# the unit no-ops cleanly elsewhere.
+ConditionPathExists=/sys/devices/platform/huawei-wmi/charge_control_thresholds
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+EnvironmentFile=-/etc/default/honor-fmbp-battery
+# $$ is a literal $ to systemd, so /bin/sh does the expansion and applies the
+# 70 90 default if the conffile is missing or the value commented out. The EC only
+# honours the OEM preset ranges (40 70 / 70 90 / 95 100); other pairs are ignored.
+ExecStart=/bin/sh -c 'echo "$${BATTERY_THRESHOLD:-70 90}" > /sys/devices/platform/huawei-wmi/charge_control_thresholds'
+
+[Install]
+WantedBy=multi-user.target

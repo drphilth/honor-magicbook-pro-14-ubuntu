@@ -1,0 +1,103 @@
+Source: honor-fmbp
+Section: kernel
+Priority: optional
+Maintainer: Philip Walsh <packages@drphilth.com>
+Build-Depends: debhelper-compat (= 13), dh-dkms
+Standards-Version: 4.7.0
+Rules-Requires-Root: no
+
+Package: honor-fmbp-hwmon-dkms
+Architecture: all
+Depends: ${misc:Depends}
+Description: HONOR MagicBook Pro 14 (FMB-P) fan tachometer hwmon driver (DKMS)
+ Reads the two fan speeds from EC RAM (reverse-engineered: LE16 words at
+ 0x2C/0x2E) and exposes them as a standard hwmon device, so `sensors` and
+ desktop monitors show fan RPM. Read-only — fan control stays with the EC.
+ DMI-gated: the module only binds on HONOR FMB-P hardware.
+
+Package: honor-fmbp-kbdlight-dkms
+Architecture: all
+Depends: ${misc:Depends}
+Description: HONOR MagicBook Pro 14 (FMB-P) keyboard backlight driver (DKMS)
+ Drives the keyboard backlight through the EC KBBL register (0x41) and
+ exposes it as a standard ::kbd_backlight LED class device, giving GNOME
+ (and upower) the usual backlight controls. Works independently of the
+ DSDT fix. DMI-gated: the module only binds on HONOR FMB-P hardware.
+
+Package: honor-fmbp-dsdt
+Architecture: all
+Depends: ${misc:Depends}, initramfs-tools | dracut
+Description: HONOR MagicBook Pro 14 (FMB-P) corrected ACPI DSDT (boot-critical)
+ The FMB-P firmware DSDT aborts at load time (NFC0/GNUM), which hides the
+ NVMe drive and breaks the touchpad; the same table also leaves the
+ touchscreen unpowered. This package ships a corrected DSDT (OEM revision
+ bumped so the kernel accepts it) and prepends it as an uncompressed early
+ cpio (kernel/firmware/acpi/dsdt.aml, CONFIG_ACPI_TABLE_UPGRADE), re-applied
+ automatically on every kernel and initramfs update. It supports whichever
+ initramfs generator is already present — an initramfs-tools hook and a
+ dracut acpi_override drop-in are both shipped, and only the active
+ generator's mechanism fires — so it never forces a generator swap or a
+ network fetch (important for the offline pre-first-boot install).
+ .
+ The FMB-P ships in two BIOS variants (global and Chinese) whose DSDTs differ
+ in their NVS base addresses; both corrected tables are included and the right
+ one is selected at install time by matching the live firmware DSDT's GNVS
+ signature (honor-fmbp-dsdt-select). The Chinese variant is untested on real
+ Chinese hardware — see README.Debian. On non-FMB-P machines nothing is applied.
+
+Package: honor-fmbp-config
+Architecture: all
+Depends: ${misc:Depends}, udev, dconf-cli
+Recommends: pkexec
+Description: HONOR MagicBook Pro 14 (FMB-P) input, device and power quirks
+ Udev rules and hwdb entries for FMB-P input quirks:
+  * inhibit the FTSC1000 touchscreen's bogus second HID collection, which
+    spams KEY_MICMUTE (~30/s) while the panel is touched;
+  * silence the meaningless EC scancode e078 sent alongside Fn hotkeys;
+  * grant group `input` write access to the touchscreen's `inhibited`
+    attribute, plus /usr/bin/honor-fmbp-touchscreen-toggle to flip it
+    (pkexec fallback for users outside that group; --power for a true
+    panel power toggle via the DSDT PowerResource).
+ .
+ Power quirks:
+  * honor-battery-thresholds.service restores the EC charge-limit preset at
+    boot (configurable via /etc/default/honor-fmbp-battery; the EC does not
+    persist it across reboots);
+  * a dconf default aligns the GNOME "Battery Health Charging" extension's
+    Quick Settings presets with the ranges huawei-wmi actually enforces.
+
+Package: honor-fmbp-archive-keyring
+Architecture: all
+Depends: ${misc:Depends}
+Description: HONOR MagicBook Pro 14 (FMB-P) PPA apt source and signing key
+ Configures the ppa:drphilth/honor-fmbp apt repository as a file-based source:
+ it installs the PPA's OpenPGP signing key to /usr/share/keyrings and a deb822
+ .sources file that references it.
+ .
+ Installing this package "adds the PPA" without any network access — no
+ add-apt-repository, no keyserver round-trip — so it can be applied from the
+ installer chroot while offline. The repository itself is only contacted later,
+ on apt update/upgrade, once the machine is booted with networking.
+
+Package: honor-magicbook-pro-14
+Architecture: all
+Depends: honor-fmbp-hwmon-dkms (= ${source:Version}),
+         honor-fmbp-kbdlight-dkms (= ${source:Version}),
+         honor-fmbp-dsdt (= ${source:Version}),
+         honor-fmbp-config (= ${source:Version}),
+         honor-fmbp-archive-keyring (= ${source:Version}),
+         acpi-call-dkms,
+         firmware-sof-signed,
+         libpam-fprintd,
+         ${misc:Depends}
+Recommends: honor-fmbp-libfprint-sdcp, gnome-shell-extension-manager
+Description: HONOR MagicBook Pro 14 2025 (FMB-P) Ubuntu enablement (metapackage)
+ Installs everything needed to run Ubuntu on the HONOR MagicBook Pro 14
+ 2025 (FMB-P): the corrected boot-critical DSDT, fan and keyboard
+ backlight drivers, input quirks and fingerprint PAM integration, and
+ pulls in the Intel SOF audio firmware (firmware-sof-signed, from the
+ Ubuntu archive) that this machine's DSP audio needs. The SDCP
+ fingerprint driver fork (honor-fmbp-libfprint-sdcp)
+ is recommended and comes from the same PPA. gnome-shell-extension-manager
+ is recommended for installing the battery-charge-limit Quick Settings panel
+ (see honor-fmbp-config's README.Debian).

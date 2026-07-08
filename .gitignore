@@ -1,0 +1,31 @@
+# Debian build artifacts (dpkg-buildpackage drops binaries at the repo root)
+*.deb
+*.ddeb
+*.dsc
+*.changes
+*.buildinfo
+*.tar.xz
+*.upload
+honor-fmbp/debian/.debhelper/
+honor-fmbp/debian/files
+honor-fmbp/debian/debhelper-build-stamp
+honor-fmbp/debian/*.substvars
+honor-fmbp/debian/*.debhelper
+honor-fmbp/debian/honor-fmbp-dsdt/
+honor-fmbp/debian/honor-fmbp-config/
+honor-fmbp/debian/honor-fmbp-hwmon-dkms/
+honor-fmbp/debian/honor-fmbp-kbdlight-dkms/
+honor-fmbp/debian/honor-fmbp-archive-keyring/
+honor-fmbp/debian/honor-magicbook-pro-14/
+
+# DSDT pipeline inputs/outputs (regenerated from YOUR machine's firmware dump —
+# dsdt/original may contain the MSDM table, i.e. a Windows product key: never commit)
+dsdt/original/
+dsdt/work/
+dsdt/patched/*.dsl
+dsdt/patched/*.aml
+dsdt/patched/acpi_override.img
+dsdt/reference/honor-fmb-p-dsdt/
+
+# ISO builder outputs
+*.iso

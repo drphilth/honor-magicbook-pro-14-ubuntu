@@ -1,0 +1,68 @@
+honor-fmbp-dsdt — corrected DSDT for the HONOR MagicBook Pro 14 (FMB-P)
+=======================================================================
+
+Why this is boot-critical
+-------------------------
+The stock FMB-P firmware DSDT runs an NFC0/GNUM method at table-load that aborts,
+which stops the kernel seeing the NVMe root device and breaks the touchpad. The
+same table also never powers the FocalTech touchscreen. This package replaces the
+DSDT early (initramfs early-cpio via CONFIG_ACPI_TABLE_UPGRADE), with the OEM
+revision bumped from 0x02 to 0x03 so the kernel accepts the override, and injects a
+PowerResource for the touchscreen.
+
+Two BIOS SKUs (global and Chinese)
+----------------------------------
+The FMB-P shipped with two BIOS variants. Their DSDTs are logically identical but a
+handful of NVS regions (GNVS/SANB/VMNB/PNVB/OGNS/MDBG) sit 0x00100000 higher on the
+Chinese unit. Applying the wrong variant would point the ACPI override at the wrong
+memory, so both corrected tables are shipped:
+
+  /usr/share/honor-fmbp/dsdt.global.aml    (hardware-verified)
+  /usr/share/honor-fmbp/dsdt.chinese.aml   (UNTESTED on real Chinese hardware)
+
+At install the postinst runs `honor-fmbp-dsdt-select`, which reads the live firmware
+DSDT (/sys/firmware/acpi/tables/DSDT), matches the GNVS base signature, and points
+the canonical /usr/share/honor-fmbp/dsdt.aml symlink at the right variant. The
+initramfs hook simply ships whatever that symlink resolves to; the SKU is a hardware
+constant, so it is detected once here rather than on every kernel update.
+
+The Chinese variant is derived from the same source as the global one (identical
+fixes, only the NVS addresses shifted) but nobody has yet booted it on a Chinese-SKU
+machine. If you have one, please confirm it boots with a working touchpad, NVMe and
+touchscreen and report back on the project tracker.
+
+Forcing a variant (chroot / image builds)
+-----------------------------------------
+If you install from a chroot or live image, the live firmware table is the build
+host's, not the target's, so auto-detection may be wrong. Force a choice:
+
+    echo chinese | sudo tee /etc/honor-fmbp/dsdt-force
+    sudo honor-fmbp-dsdt-select        # re-selects and rebuilds the initramfs
+
+Use `global`, `chinese`, or an empty file (= global). Remove the file to return to
+auto-detection. `honor-fmbp-dsdt-select` can be re-run any time (e.g. after moving a
+disk between machines).
+
+Initramfs generator (initramfs-tools or dracut)
+-----------------------------------------------
+The override is applied by whichever initramfs generator the system already uses,
+so installing this package never swaps generators or reaches the network (which
+matters for the offline pre-first-boot install — Ubuntu 26.04 defaults to dracut,
+earlier releases to initramfs-tools). Both integrations ship and only the active
+one fires:
+
+  * initramfs-tools: a hook prepends the selected AML as an uncompressed early cpio.
+  * dracut: /etc/dracut.conf.d/10-honor-fmbp-dsdt.conf sets acpi_override with
+    acpi_table_dir=/usr/share/honor-fmbp/acpi.
+
+honor-fmbp-dsdt-select feeds both: it points /usr/share/honor-fmbp/dsdt.aml (the
+hook's source) and keeps /usr/share/honor-fmbp/acpi/ holding just the selected AML
+(dracut's table dir) in sync, then rebuilds the initramfs via update-initramfs,
+which the active generator owns.
+
+Emergency fallback
+------------------
+If a kernel ever refuses the initramfs override you can fall back to the GRUB method:
+copy the selected AML to the ESP and add `acpi /dsdt.aml` to the kernel's GRUB entry.
+
+ -- Philip Walsh <packages@drphilth.com>

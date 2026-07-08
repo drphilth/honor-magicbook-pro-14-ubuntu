@@ -1,0 +1,39 @@
+honor-fmbp-config — input, device and power quirks for the HONOR MagicBook Pro 14
+================================================================================
+
+Battery charge limit
+--------------------
+The EC enforces a charge limit only for three OEM preset ranges (arbitrary pairs
+are ignored) and does not remember it across reboots, so honor-battery-thresholds
+.service re-applies it at boot. It ships set to the balanced 70–90% preset.
+
+  Presets (START END):  40 70  (max lifespan) / 70 90 (balanced) / 95 100 (max capacity)
+  Change it:            edit /etc/default/honor-fmbp-battery, then
+                        sudo systemctl restart honor-battery-thresholds.service
+  Check it:            cat /sys/devices/platform/huawei-wmi/charge_control_thresholds
+
+Requires BIOS >= 1.16 (earlier firmware exposes the sysfs node but does not enforce it).
+
+Battery Quick Settings panel (optional)
+---------------------------------------
+For a GNOME Quick Settings toggle between the three presets, install the
+"Battery Health Charging" extension (by maniacx). It is third-party, so it is not
+shipped here — install it yourself:
+
+  1. sudo apt install gnome-shell-extension-manager   (pulled in by the metapackage)
+  2. Open "Extension Manager" -> Browse -> search "Battery Health Charging" -> Install.
+  3. Log out and back in if the toggle does not appear immediately.
+
+honor-fmbp-config pre-seeds this extension's presets (via a dconf system default) to
+match the ranges huawei-wmi enforces, so its panel is correct out of the box. These
+are defaults only — you can still change them in the extension's preferences. On KDE
+Plasma the same charge limit is available natively in Power Management (no extension).
+
+Keyboard backlight
+------------------
+The keyboard backlight (from honor-fmbp-kbdlight-dkms) appears as a native GNOME 45+
+Quick Settings brightness control — no extension needed. gnome-shell enumerates
+keyboard backlights at startup, so after first install you may need to log out and
+back in for the control to show up.
+
+ -- Philip Walsh <packages@drphilth.com>

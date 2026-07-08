@@ -1,0 +1,95 @@
+21c21
+< DefinitionBlock ("", "DSDT", 2, "HONOR", "ARL", 0x00000002)
+---
+> DefinitionBlock ("", "DSDT", 2, "HONOR", "ARL", 0x00000003)
+103d102
+<     External (_SB_.PC00.CNVW.EFUN.CRFI, UnknownObj)
+212d210
+<     External (_SB_.PC00.RP01.PXSX.EFUN.CRFI, UnknownObj)
+253d250
+<     External (_SB_.PC00.RP02.PXSX.EFUN.CRFI, UnknownObj)
+294d290
+<     External (_SB_.PC00.RP03.PXSX.EFUN.CRFI, UnknownObj)
+335d330
+<     External (_SB_.PC00.RP04.PXSX.EFUN.CRFI, UnknownObj)
+377d371
+<     External (_SB_.PC00.RP05.PXSX.EFUN.CRFI, UnknownObj)
+418d411
+<     External (_SB_.PC00.RP06.PXSX.EFUN.CRFI, UnknownObj)
+459d451
+<     External (_SB_.PC00.RP07.PXSX.EFUN.CRFI, UnknownObj)
+500d491
+<     External (_SB_.PC00.RP08.PXSX.EFUN.CRFI, UnknownObj)
+542d532
+<     External (_SB_.PC00.RP09.PXSX.EFUN.CRFI, UnknownObj)
+584d573
+<     External (_SB_.PC00.RP10.PXSX.EFUN.CRFI, UnknownObj)
+626d614
+<     External (_SB_.PC00.RP11.PXSX.EFUN.CRFI, UnknownObj)
+709d696
+<     External (_SB_.PC00.RP12.PXSX.EFUN.CRFI, UnknownObj)
+1005,1006d991
+<     External (_SB_.PC00.XHCI._PS0.PS0X, MethodObj)    // 0 Arguments
+<     External (_SB_.PC00.XHCI._PS3.PS3X, MethodObj)    // 0 Arguments
+1332,1333d1316
+<     External (_SB_.PC02.XHCI._PS0.PS0X, MethodObj)    // 0 Arguments
+<     External (_SB_.PC02.XHCI._PS3.PS3X, MethodObj)    // 0 Arguments
+12266,12269d12248
+<                     If (CondRefOf (PS0X))
+<                     {
+<                         PS0X ()
+<                     }
+12281,12284d12259
+<                     If (CondRefOf (PS3X))
+<                     {
+<                         PS3X ()
+<                     }
+18155,18158d18129
+<                     If (CondRefOf (PS0X))
+<                     {
+<                         PS0X ()
+<                     }
+18170,18173d18140
+<                     If (CondRefOf (PS3X))
+<                     {
+<                         PS3X ()
+<                     }
+86145,86146d86111
+<                 CreateWordField (SBGF, 0x17, INT1)
+<                 INT1 = GNUM (0x0014080A)
+86268a86234,86268
+>                 PowerResource (PWRR, 0x00, 0x0000)
+>                 {
+>                     Name (STAT, Zero)
+>                     Method (_STA, 0, NotSerialized) { Return (STAT) }
+>                     Method (_ON, 0, NotSerialized)
+>                     {
+>                         \_SB.SPMV (0x0014040C, Zero)
+>                         \_SB.SGOV (0x0014040C, One)
+>                         Sleep (0x02)
+>                         \_SB.SPMV (0x00140482, Zero)
+>                         \_SB.SGOV (0x00140482, One)
+>                         Sleep (0x64)
+>                         STAT = One
+>                     }
+>                     Method (_OFF, 0, NotSerialized)
+>                     {
+>                         \_SB.SGOV (0x00140482, Zero)
+>                         Sleep (0x03)
+>                         \_SB.SGOV (0x0014040C, Zero)
+>                         STAT = Zero
+>                     }
+>                 }
+>                 Name (TD_P, Package (0x01) { \_SB.PC00.I2C2.TPL1.PWRR })
+>                 Method (_PR0, 0, NotSerialized)
+>                 {
+>                     If ((_STA () == 0x0F)) { Return (TD_P) }
+>                     Return (Package (0x00) {})
+>                 }
+>                 Method (_PR3, 0, NotSerialized)
+>                 {
+>                     If ((_STA () == 0x0F)) { Return (TD_P) }
+>                     Return (Package (0x00) {})
+>                 }
+>                 Method (_PS0, 0, NotSerialized) { }
+>                 Method (_PS3, 0, NotSerialized) { }

@@ -1,0 +1,27 @@
+#!/bin/sh
+set -e
+
+#DEBHELPER#
+
+# Make the quirks live without a reboot: rebuild hwdb now (udev's dpkg trigger
+# also does this, but only after this postinst has run) and replay add events
+# on input devices so the RUN+= inhibit rules apply to already-present nodes.
+if [ "$1" = "configure" ] && [ -d /run/udev ]; then
+    systemd-hwdb update || true
+    udevadm control --reload || true
+    udevadm trigger --subsystem-match=input --action=add || true
+fi
+
+# Compile our dconf default for the "Battery Health Charging" extension into the
+# system 'local' database. Ensure the user profile actually reads that database
+# (append rather than clobber, in case an admin/another package set the profile).
+if [ "$1" = "configure" ]; then
+    profile=/etc/dconf/profile/user
+    if [ ! -e "$profile" ]; then
+        mkdir -p /etc/dconf/profile
+        printf 'user-db:user\nsystem-db:local\n' > "$profile"
+    elif ! grep -qx 'system-db:local' "$profile"; then
+        echo 'system-db:local' >> "$profile"
+    fi
+    dconf update || true
+fi

@@ -1,0 +1,4 @@
+dsdt/dsdt.global.aml usr/share/honor-fmbp/
+dsdt/dsdt.chinese.aml usr/share/honor-fmbp/
+sbin/honor-fmbp-dsdt-select usr/sbin/
+config/dracut.conf.d/10-honor-fmbp-dsdt.conf etc/dracut.conf.d/

@@ -1,0 +1,20 @@
+--- dsdt/original/DSDT.dsl	2026-06-30 09:23:05.816902249 +0100
++++ dsdt/patched/dsdt.dsl	2026-06-30 09:27:48.221257209 +0100
+@@ -18,7 +18,7 @@
+  *     Compiler ID      "ACPI"
+  *     Compiler Version 0x00040000 (262144)
+  */
+-DefinitionBlock ("", "DSDT", 2, "HONOR", "ARL", 0x00000002)
++DefinitionBlock ("", "DSDT", 2, "HONOR", "ARL", 0x00000003)
+ {
+     /*
+      * iASL Warning: There were 50 external control methods found during
+@@ -86142,8 +86142,6 @@
+                             0x0000
+                         }
+                 })
+-                CreateWordField (SBGF, 0x17, INT1)
+-                INT1 = GNUM (0x0014080A)
+                 Method (_STA, 0, NotSerialized)  // _STA: Status
+                 {
+                     If (((TPDT == One) || (TPDT == 0x02)))

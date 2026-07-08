@@ -1,0 +1,12 @@
+# ppa:drphilth/honor-fmbp — HONOR MagicBook Pro 14 (FMB-P) Ubuntu enablement.
+# Installed by honor-fmbp-archive-keyring. "Adds the PPA" purely by dropping
+# this file plus the signing key in /usr/share/keyrings — no network, so it can
+# be applied from the installer chroot offline. The repo is only contacted later,
+# on `apt update` / `apt upgrade`, once the machine is booted with networking.
+#
+# Pinned to the 26.04 (resolute) series — the only release these packages target.
+Types: deb
+URIs: https://ppa.launchpadcontent.net/drphilth/honor-fmbp/ubuntu/
+Suites: resolute
+Components: main
+Signed-By: /usr/share/keyrings/honor-fmbp-ppa.gpg

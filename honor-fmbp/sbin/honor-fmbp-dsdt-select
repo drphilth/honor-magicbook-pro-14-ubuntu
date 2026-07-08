@@ -1,0 +1,101 @@
+#!/bin/sh
+# honor-fmbp-dsdt-select — pick the DSDT variant matching this machine's BIOS SKU and
+# point the canonical /usr/share/honor-fmbp/dsdt.aml symlink at it. The initramfs hook
+# is deliberately dumb and just ships whatever that symlink resolves to.
+#
+# Generator-agnostic: this also keeps /usr/share/honor-fmbp/acpi/ populated with just
+# the selected AML, which dracut consumes via acpi_table_dir (see the shipped
+# /etc/dracut.conf.d/10-honor-fmbp-dsdt.conf). initramfs-tools ignores that dir and
+# dracut ignores the hook, so exactly the active generator's mechanism fires.
+#
+# Why here and not in the hook: the FMB-P global and Chinese BIOSes carry identical DSDT
+# logic but different NVS base addresses; applying the wrong variant would drive the ACPI
+# override at the wrong memory. The SKU is fixed hardware, so we resolve it ONCE (at
+# install, or when re-run by hand) instead of re-detecting on every kernel/initramfs rebuild.
+#
+# Detection: the GNVS SystemMemory OperationRegion base is 0x67E09018 (global) vs
+# 0x67E19018 (Chinese). In AML that is a DWordConst — bytes "0c 18 90 e0 67" (global) or
+# "0c 18 90 e1 67" (Chinese). We match those in the live firmware DSDT via an od hexdump +
+# fixed-string grep: locale-independent, coreutils-only. (Do NOT use grep -P '\xNN' for
+# this — under a UTF-8 locale it matches Unicode codepoints, not raw bytes, and silently
+# finds nothing.)
+#
+# Override: put "global" or "chinese" (or an empty file, meaning global) in
+# /etc/honor-fmbp/dsdt-force to skip detection — for installs from a chroot/image build
+# where the live firmware table is the build host's, not the target's.
+set -e
+
+SHARE=/usr/share/honor-fmbp
+CANON="$SHARE/dsdt.aml"
+ACPIDIR="$SHARE/acpi"           # dracut's acpi_table_dir: holds exactly the selected AML
+FORCE=/etc/honor-fmbp/dsdt-force
+TABLE=/sys/firmware/acpi/tables/DSDT
+
+run_initramfs=1
+[ "$1" = "--postinst" ] && run_initramfs=0   # postinst lets the dpkg initramfs trigger rebuild
+
+log() { echo "honor-fmbp-dsdt: $*" >&2; }
+
+detect_sku() {
+    [ -r "$TABLE" ] || return 1
+    if od -An -v -tx1 "$TABLE" | tr -s ' \n' ' ' | grep -q '0c 18 90 e0 67'; then
+        echo global; return 0
+    fi
+    if od -An -v -tx1 "$TABLE" | tr -s ' \n' ' ' | grep -q '0c 18 90 e1 67'; then
+        echo chinese; return 0
+    fi
+    return 1
+}
+
+sku=""
+if [ -e "$FORCE" ]; then
+    sku=$(tr -d '[:space:]' < "$FORCE" 2>/dev/null || true)
+    case "$sku" in
+        global|chinese) log "SKU forced to '$sku' via $FORCE" ;;
+        "")             sku=global; log "empty $FORCE -> forcing global DSDT" ;;
+        *)              log "unrecognised '$sku' in $FORCE -> forcing global DSDT"; sku=global ;;
+    esac
+else
+    vendor=$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || true)
+    product=$(cat /sys/class/dmi/id/product_name 2>/dev/null || true)
+    if [ "$vendor" = "HONOR" ] && [ "$product" = "FMB-P" ]; then
+        if sku=$(detect_sku); then
+            log "detected $sku SKU from firmware DSDT"
+        else
+            sku=global
+            log "could not read/decode the firmware DSDT -> defaulting to global."
+            log "If this is a Chinese-SKU unit: echo chinese | sudo tee $FORCE; sudo honor-fmbp-dsdt-select"
+        fi
+    else
+        log "not an HONOR FMB-P (DMI: ${vendor:-?}/${product:-?}) -> no DSDT override selected"
+        log "(create $FORCE to force a selection for image builds on other hardware)"
+    fi
+fi
+
+if [ -n "$sku" ]; then
+    if [ ! -e "$SHARE/dsdt.$sku.aml" ]; then
+        log "ERROR: $SHARE/dsdt.$sku.aml is missing — package broken"; exit 1
+    fi
+    ln -sf "dsdt.$sku.aml" "$CANON"                 # initramfs-tools hook copies this (deref)
+    mkdir -p "$ACPIDIR"                             # dracut scans this dir for *.aml
+    rm -f "$ACPIDIR"/*.aml
+    # A real copy, NOT a symlink: dracut's DRACUT_CP is `cp -dfrp` (no-dereference), so a
+    # symlink here would land in the early cpio dangling and the kernel would find no table.
+    cp -f "$SHARE/dsdt.$sku.aml" "$ACPIDIR/dsdt.aml"
+    log "selected $sku DSDT ($CANON -> dsdt.$sku.aml)"
+else
+    rm -f "$CANON"
+    rm -rf "$ACPIDIR"                               # no dir => dracut's acpi_override guard skips
+fi
+
+# Rebuild the initramfs so the change takes effect. On Ubuntu both generators are
+# mutually exclusive and the active one owns update-initramfs (dracut ships a shim),
+# so this single call is generator-agnostic; fall back to dracut directly if only
+# dracut-core (no shim) is present.
+if [ "$run_initramfs" = "1" ]; then
+    if command -v update-initramfs >/dev/null 2>&1; then
+        update-initramfs -u
+    elif command -v dracut >/dev/null 2>&1; then
+        dracut --force --regenerate-all
+    fi
+fi

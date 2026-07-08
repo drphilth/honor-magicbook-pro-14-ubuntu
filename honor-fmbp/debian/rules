@@ -1,0 +1,52 @@
+#!/usr/bin/make -f
+
+# The honor-fmbp-archive-keyring binary ships the PPA signing key, which
+# Launchpad only mints on the FIRST upload — so before the first publish the key
+# file is a PLACEHOLDER. Rather than block the whole source build (dsdt is
+# boot-critical and needed for test ISOs), we simply EXCLUDE the keyring binary
+# until the real key has been fetched (keyring/fetch-ppa-key.sh). Once the key is
+# present the package builds normally and is guarded against shipping a placeholder.
+KEYRING_KEY := keyring/honor-fmbp-ppa.gpg
+KEYRING_READY := $(shell if [ -s $(KEYRING_KEY) ] && ! grep -q PLACEHOLDER $(KEYRING_KEY); then echo yes; else echo no; fi)
+
+%:
+	dh $@ --with dkms $(if $(filter no,$(KEYRING_READY)),-Nhonor-fmbp-archive-keyring)
+
+# The battery unit is named differently from its package (honor-fmbp-config), so
+# dh_installsystemd needs --name to find debian/honor-fmbp-config.honor-battery-thresholds.service
+# and generate its enable/start maintscript.
+override_dh_installsystemd:
+	dh_installsystemd --name=honor-battery-thresholds
+
+# The kernel only applies an initrd DSDT override whose OEMRevision exceeds the
+# firmware table's (0x02 on FMB-P) — refuse to build a package that would ship
+# a silently-ignored table. Check both SKU variants.
+execute_after_dh_auto_build:
+	for a in dsdt/dsdt.global.aml dsdt/dsdt.chinese.aml; do \
+		test "$$(od -An -tu4 -j24 -N4 $$a | tr -d ' ')" -gt 2; \
+	done
+
+# Guard against the 2026-07-02 incident: with the per-package wiring files
+# (.install/.dkms/.initramfs-hook) missing, dh silently builds empty doc-only
+# packages, and reinstalling those makes dpkg delete the boot-critical payload
+# it previously owned. Refuse to build unless every staged payload exists.
+execute_before_dh_gencontrol:
+	test -s debian/honor-fmbp-dsdt/usr/share/honor-fmbp/dsdt.global.aml
+	test -s debian/honor-fmbp-dsdt/usr/share/honor-fmbp/dsdt.chinese.aml
+	test -x debian/honor-fmbp-dsdt/usr/sbin/honor-fmbp-dsdt-select
+	test -x debian/honor-fmbp-dsdt/usr/share/initramfs-tools/hooks/honor-fmbp-dsdt
+	test -s debian/honor-fmbp-hwmon-dkms/usr/src/honor-fmbp-hwmon-1.0/dkms.conf
+	test -s debian/honor-fmbp-kbdlight-dkms/usr/src/honor-fmbp-kbdlight-1.1/dkms.conf
+	test -x debian/honor-fmbp-config/usr/bin/honor-fmbp-touchscreen-toggle
+	test -s debian/honor-fmbp-config/usr/lib/udev/rules.d/99-honor-fmbp-touchscreen.rules
+	test -s debian/honor-fmbp-config/usr/lib/udev/hwdb.d/61-honor-fmbp-keyboard.hwdb
+	test -s debian/honor-fmbp-config/etc/default/honor-fmbp-battery
+	test -s debian/honor-fmbp-config/etc/dconf/db/local.d/00-honor-fmbp-battery
+	# Keyring payload is only staged when the real key is present (see -N above).
+	if [ "$(KEYRING_READY)" = yes ]; then \
+		test -s debian/honor-fmbp-archive-keyring/etc/apt/sources.list.d/honor-fmbp.sources; \
+		test -s debian/honor-fmbp-archive-keyring/usr/share/keyrings/honor-fmbp-ppa.gpg; \
+		! grep -q PLACEHOLDER debian/honor-fmbp-archive-keyring/usr/share/keyrings/honor-fmbp-ppa.gpg; \
+	else \
+		echo "NOTE: honor-fmbp-archive-keyring EXCLUDED — run keyring/fetch-ppa-key.sh after the first PPA publish."; \
+	fi

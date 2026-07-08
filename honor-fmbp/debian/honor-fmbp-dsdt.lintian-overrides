@@ -1,0 +1,4 @@
+# honor-fmbp-dsdt-select is our own helper, shipped at a fixed absolute path.
+# Calling it by full path in the maintainer script is deliberate: dpkg does not
+# guarantee /usr/sbin is on PATH, so a bare command name could fail to resolve.
+honor-fmbp-dsdt: command-with-path-in-maintainer-script

@@ -1,0 +1,34 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: honor-fmbp
+Upstream-Contact: Philip Walsh <packages@drphilth.com>
+
+Files: *
+Copyright: 2025-2026 Philip Walsh <packages@drphilth.com>
+License: GPL-2
+
+Files: dsdt/dsdt.global.aml dsdt/dsdt.chinese.aml
+Copyright: HONOR Device Co., Ltd. (original firmware DSDT); 2025-2026 Philip Walsh (fixes)
+License: OEM-firmware-derived
+Comment: Decompiled from the FMB-P system firmware's ACPI DSDT, minimally
+ patched (NFC0 load-time abort fix, touchscreen PowerResource, OEMRevision
+ bump) and recompiled with iasl. Two BIOS SKUs are shipped: the global variant
+ (built from this unit's firmware) and the Chinese variant (the same fixes with
+ the six differing NVS base addresses, cross-checked against denis-bb's public
+ honor-fmb-p-dsdt reference). Only the minimal changes required to boot Linux
+ on this hardware are applied; the full build pipeline and patches are published
+ in the source repository. Distributed to owners of the covered hardware as an
+ interoperability fix, in line with the long-standing community practice of
+ publishing corrected laptop DSDTs.
+
+License: GPL-2
+ This package is free software; you can redistribute it and/or modify it
+ under the terms of the GNU General Public License as published by the
+ Free Software Foundation; version 2 of the License.
+ .
+ On Debian systems, the complete text of the GNU General Public License
+ version 2 can be found in "/usr/share/common-licenses/GPL-2".
+
+License: OEM-firmware-derived
+ Derived, for interoperability, from the ACPI firmware shipped with the covered
+ hardware, with only the minimal changes required to boot Linux on it.
+ Redistributed to owners of that hardware; see Comment above.

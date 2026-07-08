@@ -1,0 +1,2 @@
+keyring/honor-fmbp-ppa.gpg usr/share/keyrings/
+keyring/honor-fmbp.sources etc/apt/sources.list.d/

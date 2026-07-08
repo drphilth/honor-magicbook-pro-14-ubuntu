@@ -1,0 +1,77 @@
+honor-fmbp (1.0.4) resolute; urgency=medium
+
+  * honor-fmbp-dsdt: support dracut as well as initramfs-tools, and stop
+    forcing a generator swap. Ubuntu 26.04 defaults to dracut, so the old
+    "Depends: initramfs-tools" pulled initramfs-tools over the network and
+    removed dracut on a fresh install — breaking the offline pre-first-boot
+    guarantee. Now:
+    - Depends: initramfs-tools | dracut (satisfied by whichever is already
+      present; no network fetch, no swap).
+    - ship /etc/dracut.conf.d/10-honor-fmbp-dsdt.conf (acpi_override +
+      acpi_table_dir) alongside the existing initramfs-tools hook; only the
+      active generator's mechanism fires.
+    - honor-fmbp-dsdt-select now also keeps /usr/share/honor-fmbp/acpi/ (the
+      dracut table dir) holding just the selected SKU's AML, and rebuilds via
+      update-initramfs (generator-agnostic on Ubuntu; dracut ships the shim),
+      falling back to `dracut --force --regenerate-all` if only dracut-core
+      is present.
+
+ -- Philip Walsh <packages@drphilth.com>  Tue, 07 Jul 2026 16:36:11 +0100
+
+honor-fmbp (1.0.3) resolute; urgency=medium
+
+  * New binary honor-fmbp-archive-keyring: ships the ppa:drphilth/honor-fmbp
+    deb822 .sources file and the PPA's signing key under /usr/share/keyrings.
+    Installing it "adds the PPA" purely by dropping files — no
+    add-apt-repository, no keyserver round-trip — so it can be applied from the
+    installer chroot with no network; the repo is only contacted later on apt
+    update/upgrade. The metapackage now depends on it. Launchpad mints a PPA
+    signing key only on first upload, so the key is a placeholder until
+    keyring/fetch-ppa-key.sh is run post-publish; debian/rules excludes the
+    keyring binary (rather than blocking the whole build) while the placeholder
+    is present, keeping the boot-critical packages buildable for test ISOs.
+  * honor-magicbook-pro-14: reword the description — the Intel SOF audio
+    firmware is pulled from the Ubuntu archive (firmware-sof-signed), not
+    shipped by this package.
+
+ -- Philip Walsh <packages@drphilth.com>  Sat, 04 Jul 2026 11:00:00 +0100
+
+honor-fmbp (1.0.2) resolute; urgency=medium
+
+  * honor-fmbp-dsdt: support both FMB-P BIOS SKUs. Ship the corrected DSDT for
+    the global and Chinese variants (they differ only in six NVS base
+    addresses) and pick the right one at install by matching the live firmware
+    DSDT's GNVS signature (new honor-fmbp-dsdt-select, run from postinst; the
+    initramfs hook is now variant-agnostic). The Chinese AML is derived from
+    the same fixes but is untested on real Chinese hardware — see
+    README.Debian. Override with /etc/honor-fmbp/dsdt-force. Global path
+    unchanged (byte-identical AML).
+  * honor-fmbp-config: ship honor-battery-thresholds.service (previously hand-
+    installed), configurable via /etc/default/honor-fmbp-battery; restores the
+    EC charge-limit preset at boot (default 70-90%).
+  * honor-fmbp-config: pre-seed the maniacx "Battery Health Charging" GNOME
+    extension's presets (dconf system default) to the ranges huawei-wmi
+    enforces, so its Quick Settings panel is correct out of the box.
+  * honor-magicbook-pro-14: Recommends gnome-shell-extension-manager.
+
+ -- Philip Walsh <packages@drphilth.com>  Fri, 03 Jul 2026 15:00:00 +0100
+
+honor-fmbp (1.0.1) resolute; urgency=high
+
+  * Restore the per-package payload wiring (.install/.dkms/.initramfs-hook/
+    .postinst) accidentally deleted in commit 97bd4eb; the 1.0.0 debs rebuilt
+    after that deletion were empty (docs only), and reinstalling them made
+    dpkg remove the DSDT override and DKMS sources — unbootable system
+    (no NVMe) on 2026-07-02.
+  * debian/rules: fail the build unless every staged payload file exists, so
+    an empty package can never be produced silently again.
+
+ -- Philip Walsh <packages@drphilth.com>  Fri, 03 Jul 2026 12:00:00 +0100
+
+honor-fmbp (1.0.0) resolute; urgency=medium
+
+  * Initial packaging: hwmon + kbdlight DKMS modules, corrected DSDT as an
+    initramfs early ACPI override, udev/hwdb input quirks, and the
+    honor-magicbook-pro-14 metapackage.
+
+ -- Philip Walsh <packages@drphilth.com>  Thu, 02 Jul 2026 21:43:41 +0100
