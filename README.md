@@ -14,8 +14,9 @@ corrected DSDT plus everything else the hardware needs, packaged so it stays app
 across kernel and BIOS-unrelated updates.
 
 > **Target release: Ubuntu 26.04 (resolute), kernel 7.0.** Earlier releases are untested.
-> **Secure Boot must be OFF** — the kernel ignores initrd ACPI table overrides under
-> Secure Boot (firmware: F2 → set a supervisor password if asked → Secure Boot → Disabled).
+> **Secure Boot off is the simplest supported configuration** (firmware: F2 → set a
+> supervisor password if asked → Secure Boot → Disabled). Secure Boot *can* be kept on,
+> with caveats — see [Secure Boot](#secure-boot) below.
 
 ## What works
 
@@ -88,6 +89,41 @@ your own firmware dump): [`dsdt/`](dsdt/).
 The **global** variant is hardware-tested (this project's reference unit). The
 **Chinese** variant is built through the same pipeline but **unverified on real
 hardware** — if you own a Chinese-SKU unit, please test and report back in an issue.
+
+## Secure Boot
+
+**Recommended: turn Secure Boot off.** It's the simplest, most robust configuration and
+what the install guide assumes. With it off, the DSDT override applies and the DKMS
+drivers load, no key management required.
+
+Secure Boot can be kept **on**, but understand the two moving parts — they behave
+differently and were verified on 26.04's kernel 7.0.0-27:
+
+- **The DSDT override.** On kernel 7.0 the initrd ACPI-table override still applies with
+  Secure Boot on — confirmed on hardware (`dmesg`: `Kernel is locked down from EFI Secure
+  Boot mode` *and* `ACPI: Table Upgrade: override [DSDT- HONOR- ARL]`, our rev-3 table
+  live). This works because of a boot-ordering detail in 7.0's `start_kernel()`
+  (`setup_arch()` runs before the lockdown LSM's hook is armed, so the
+  `LOCKDOWN_ACPI_TABLES` check that *would* reject the override is not yet active when
+  `acpi_table_upgrade()` runs). **This is not guaranteed across kernel updates** — it reads
+  like an unintended gap, and a future kernel could reinstate the check, at which point the
+  override would be silently ignored and the machine would fail to boot (no NVMe). Do not
+  rely on it for an unattended box. There is no signed-DSDT mechanism in the kernel, so MOK
+  enrollment cannot bless the override — this ordering quirk is the only reason it currently
+  works under Secure Boot.
+- **The DKMS drivers** (`honor-fmbp-hwmon`, `honor-fmbp-kbdlight`). These *are* subject to
+  normal module-signature enforcement and are **rejected under Secure Boot until their
+  signing key is enrolled** (`modprobe … → Key was rejected by service`). DKMS already
+  signs them at build time with the machine-local MOK at `/var/lib/shim-signed/mok/MOK.der`
+  (via `dkms` + `shim-signed`). Enroll that key once:
+
+  ```bash
+  sudo mokutil --import /var/lib/shim-signed/mok/MOK.der   # sets a one-time password
+  sudo reboot                                              # MokManager → Enroll MOK → same password
+  ```
+
+  After enrollment the drivers load normally with Secure Boot on. (Under Secure Boot off,
+  no enrollment is needed — unsigned local modules load fine.)
 
 ## Repo layout
 

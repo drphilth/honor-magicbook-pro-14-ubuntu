@@ -1,11 +1,19 @@
 # DSDT root-cause investigation (clean fix)
 
-> **PREREQUISITE: Secure Boot OFF.** The initrd ACPI-table override
-> (`CONFIG_ACPI_TABLE_UPGRADE`) we use to load the corrected DSDT is **ignored by the
-> kernel when Secure Boot is enabled**. Disable Secure Boot in the laptop firmware
-> (F2 → Security/Boot → Secure Boot → Disabled; Honor may require setting a supervisor
-> password first) before any DSDT work. Ventoy also trips shim's MOK enrollment under
-> Secure Boot — disabling it clears that too.
+> **PREREQUISITE: Secure Boot OFF (recommended for DSDT work).** The initrd ACPI-table
+> override (`CONFIG_ACPI_TABLE_UPGRADE`) is gated by kernel lockdown
+> (`LOCKDOWN_ACPI_TABLES`), which Secure Boot forces on. Disable Secure Boot in the laptop
+> firmware (F2 → Security/Boot → Secure Boot → Disabled; Honor may require setting a
+> supervisor password first) so the override reliably applies. Ventoy also trips shim's MOK
+> enrollment under Secure Boot — disabling it clears that too.
+>
+> **Nuance (verified on kernel 7.0.0-27, 2026-07):** the override *does* in fact still apply
+> with Secure Boot **on** on this kernel — a `start_kernel()` ordering quirk means
+> `acpi_table_upgrade()` runs before the lockdown LSM hook is armed, so the check that would
+> reject it is inert at that moment (`dmesg` shows both `Kernel is locked down from EFI
+> Secure Boot mode` and `ACPI: Table Upgrade: override`). This looks unintended and is **not
+> guaranteed across kernel updates**, so keep Secure Boot off for reliable/unattended boot.
+> See the "Secure Boot" section of the top-level README.
 
 
 We are **not** blindly applying denis-bb's patch. Goal: find the *minimal,
