@@ -134,6 +134,11 @@ dsdt/         the pipeline that produced the shipped DSDTs (transparency / futur
 docs/         root-cause analysis of the DSDT defect
 ```
 
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for the version history (per-package detail in
+[`honor-fmbp/debian/changelog`](honor-fmbp/debian/changelog)).
+
 ## Credits
 
 - **denis-bb**'s `honor-fmb-p-dsdt` — the first public FMB-P DSDT workaround and the
