@@ -72,10 +72,13 @@ the NVMe root, so without this the first boot hangs. So:
 
 1. Run the Ubuntu installer as normal. **When it finishes, do _not_ click "Restart now"** — instead
    close/quit back to the live desktop and open a terminal.
-2. Run the bundled offline install helper:
+2. Run the bundled offline install helper. The live session mounts the ISO read-only —
+   usually at `/media/cdrom` (on some boots `/cdrom`):
 
    ```bash
-   sudo /cdrom/honor-fmbp/honor-fmbp-install.sh
+   sudo /media/cdrom/honor-fmbp/honor-fmbp-install.sh
+   # if that path doesn't exist, locate the helper:
+   #   ls -d /media/*/honor-fmbp /media/cdrom/honor-fmbp /cdrom/honor-fmbp 2>/dev/null
    ```
 
    It finds the freshly-installed system, chroots it, and installs — **entirely offline, from a deb
@@ -84,7 +87,7 @@ the NVMe root, so without this the first boot hangs. So:
    (`honor-fmbp-config`), and the PPA apt source (`honor-fmbp-archive-keyring`). It verifies the DSDT
    actually landed in the installed initramfs before telling you it's safe to reboot.
    *(If the installer already unmounted things, pass the root explicitly, e.g.
-   `sudo mount /dev/nvme0n1p2 /mnt && sudo /cdrom/honor-fmbp/honor-fmbp-install.sh /mnt`.)*
+   `sudo mount /dev/nvme0n1p2 /mnt && sudo /media/cdrom/honor-fmbp/honor-fmbp-install.sh /mnt`.)*
 3. Reboot into the installed system — NVMe, touchpad and touchscreen work from boot #1.
 4. Finish the rest **online** (DKMS fan/keyboard drivers, fingerprint, SOF audio firmware — these
    build against the running kernel and need MOK enrollment, so they belong on the booted system):

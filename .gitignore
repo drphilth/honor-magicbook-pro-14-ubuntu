@@ -19,9 +19,14 @@ honor-fmbp/debian/honor-fmbp-archive-keyring/
 honor-fmbp/debian/honor-magicbook-pro-14/
 
 # DSDT pipeline inputs/outputs (regenerated from YOUR machine's firmware dump —
-# dsdt/original may contain the MSDM table, i.e. a Windows product key: never commit)
+# dsdt/original & dsdt/work may contain the MSDM table = a Windows product key: never commit.
+# `acpidump -b` emits MSDM alongside DSDT/SSDTs, so also ignore any stray MSDM dump, anywhere.
 dsdt/original/
 dsdt/work/
+MSDM
+MSDM.*
+msdm
+msdm.*
 dsdt/patched/*.dsl
 dsdt/patched/*.aml
 dsdt/patched/acpi_override.img

@@ -48,8 +48,13 @@ If `iasl -d` fails with `AE_ALREADY_EXISTS`, exclude the SSDT that defines
 
 The patched DSDT now carries **two** fixes (OEM rev **0x03**):
 
-1. **Touchpad** (step [2], the original fix): delete `NFC0`'s load-time `GNUM` call so
-   the table load no longer aborts.
+1. **DSDT load** (step [2], the original fix): delete `NFC0`'s load-time `GNUM` call so
+   the table stops aborting mid-load. This is the boot-critical fix — the abort orphans
+   the whole ACPI namespace (`\_SB.PC00`, the PCIe root complex, plus `GFX0`/`TCPU` and
+   the USB-C SSDT), so on Ubuntu it hides the **NVMe root** (no boot) and the I2C
+   **touchpad**. (It was labelled "Touchpad" after the Fedora-6.19 recon, where PCIe/NVMe
+   survived the abort and only the touchpad broke — the visible casualties are
+   kernel-dependent; see `../docs/dsdt-root-cause.md`.)
 2. **Touchscreen** (step [2b], `inject-touchscreen-power.py`): inject the ACPI
    `PowerResource (PWRR)` + `_PR0`/`_PR3` that the OEM only wrote for the disabled
    I2C4/I2C5 sibling panels, so Linux powers the FTSC1000 panel at i2c-hid probe
@@ -64,5 +69,7 @@ The patched DSDT now carries **two** fixes (OEM rev **0x03**):
 
 - `reference/` — denis-bb's `.patch` + `original/` & `patched/` `.dsl` (pulled by
   `reference/fetch.sh`). For diffing only; never boot these directly.
-- `original/`  — `acpidump` output from this machine (gitignored if large).
+- `original/`  — raw `acpidump` output. **⚠️ Never committed** — `.gitignore`d because it
+  includes the **MSDM** table (the machine's Windows OEM product key). `acpidump -b` emits
+  MSDM alongside DSDT/SSDTs, so keep *every* raw dump out of git (see `.gitignore`).
 - `patched/`   — our edited `dsdt.dsl` and compiled `dsdt.aml` (the deliverable).

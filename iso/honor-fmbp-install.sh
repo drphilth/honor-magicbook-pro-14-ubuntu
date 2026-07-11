@@ -19,7 +19,7 @@
 #     sudo apt update && sudo apt install honor-magicbook-pro-14
 #
 # Usage (from the live-session terminal, e.g. off the Ventoy stick / ISO):
-#     sudo /cdrom/honor-fmbp/honor-fmbp-install.sh [TARGET]
+#     sudo /media/cdrom/honor-fmbp/honor-fmbp-install.sh [TARGET]
 #
 # TARGET may be a mounted root directory (e.g. /target) OR a block device (e.g.
 # /dev/sda2), which the script mounts itself. With no argument it uses /target if

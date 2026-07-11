@@ -27,7 +27,7 @@ With these packages, effectively everything:
 | NVMe visibility, touchpad, USB-C (incl. DisplayPort) | ✅ fixed by the corrected DSDT (boot-critical) |
 | Touchscreen (FocalTech FTSC1000) | ✅ fixed in the same DSDT (ACPI `PowerResource` injection) + udev quirk |
 | Display / Intel Arc graphics / HDR, WiFi 6E, Bluetooth, webcam, suspend/resume | ✅ native |
-| Audio (Intel cAVS / SOF) | ✅ with `firmware-sof-signed` (pulled in by the metapackage) |
+| Audio (Intel cAVS / SOF) | ✅ Intel SOF firmware (`firmware-sof-signed` — standard on Ubuntu; the metapackage guarantees it) |
 | Fan RPM readout (`sensors`) | ✅ `honor-fmbp-hwmon-dkms` (custom EC driver) |
 | Keyboard backlight (GNOME Quick Settings, off/low/high) | ✅ `honor-fmbp-kbdlight-dkms` (custom EC driver; re-login once after install) |
 | Battery charge-limit presets (40–70 / 70–90 / 95–100) | ✅ `honor-fmbp-config` (huawei-wmi + restore unit; BIOS ≥ 1.16) |
@@ -45,7 +45,7 @@ one command, then a normal install with one extra step before the first reboot.
 1. `iso/build-install-iso.sh stock-ubuntu-26.04.iso out.iso` → bootable installer with
    working input and NVMe.
 2. Install Ubuntu normally; **before rebooting**, run the bundled offline helper
-   (`sudo /cdrom/honor-fmbp/honor-fmbp-install.sh`) — it bakes the DSDT into the
+   (`sudo /media/cdrom/honor-fmbp/honor-fmbp-install.sh`) — it bakes the DSDT into the
    *installed* system's initramfs and pre-configures the PPA, entirely offline.
 3. Reboot, then `sudo apt install honor-magicbook-pro-14` for the rest (DKMS drivers,
    fingerprint, audio firmware).

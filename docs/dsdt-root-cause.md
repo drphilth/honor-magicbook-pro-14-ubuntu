@@ -40,7 +40,9 @@ the machine's **runtime** USB failure. We confirm the runtime cause from real lo
    ```bash
    sudo dmesg | grep -iE 'acpi|AE_|dsdt|xhci|usb' | tee docs/dmesg-stock.txt
    journalctl -k -b | grep -iE 'acpi|AE_' | tee -a docs/dmesg-stock.txt
-   sudo acpidump -b           # dumps dsdt.dat + ALL ssdt*.dat -> dsdt/original/
+   sudo acpidump -b           # DSDT + ALL SSDTs *and MSDM* -> dsdt/original/
+   # ⚠️ acpidump -b also dumps MSDM = the machine's Windows OEM product key.
+   #    dsdt/original/ (and any MSDM* file) is .gitignored — never commit raw dumps.
    ```
    Identify the *actual* runtime error and which controllers fail to enumerate.
 
@@ -91,6 +93,14 @@ ACPI BIOS Error: Could not resolve symbol [\_SB.PR00] / [\_SB.PC00.GFX0] /
   so the Debian/Ubuntu "no USB controllers" symptom does **not** bite here. The only
   user-visible breakage from this is the **touchpad** (its ACPI/i2c-hid node never
   gets created — zero touchpad/i2c-hid lines in dmesg).
+- **Kernel-dependent — matters for the Ubuntu product.** On our Ubuntu 26.04 / kernel
+  7.0 target the *same* abort is more severe: it hides the **NVMe root** / boot path, so
+  the fix is **boot-critical** there (hence the pre-first-boot initramfs bake). *Why*
+  Fedora 6.19 survives the abort (PCIe/NVMe still enumerate) while Ubuntu does not is an
+  unexplained kernel-build difference we deliberately did **not** chase — not worth the
+  effort. Takeaway: the NFC0/GNUM fix restores the *whole* namespace; which casualties are
+  user-visible depends on the kernel, so the "touchpad" shorthand is Fedora-specific, not
+  the actual scope.
 - This makes **NFC0 removal candidate #1, confirmed**: it stops the broken GNUM/GINF
   from executing at load. `EFUN.CRFI` / `PS0X` edits are confirmed disassembly collateral.
 
