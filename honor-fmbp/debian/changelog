@@ -1,3 +1,16 @@
+honor-fmbp (1.0.5) resolute; urgency=medium
+
+  * honor-fmbp-hwmon-dkms, honor-fmbp-kbdlight-dkms: ship a modules-load.d
+    drop-in so the driver actually loads on a clean boot. Both modules have no
+    device modalias (they instantiate the fan hwmon / huawei::kbd_backlight LED
+    unconditionally on the FMB-P), so nothing was loading them at boot on a
+    fresh install — the fan RPM sensors and the GNOME keyboard-backlight control
+    were silently absent until a manual modprobe. Each DKMS package now installs
+    /usr/lib/modules-load.d/<module>.conf and the build guard requires it.
+    (Exposed by the 2026-07-11 clean reinstall.)
+
+ -- Philip Walsh <packages@drphilth.com>  Sat, 11 Jul 2026 19:48:19 +0100
+
 honor-fmbp (1.0.4) resolute; urgency=medium
 
   * honor-fmbp-dsdt: support dracut as well as initramfs-tools, and stop

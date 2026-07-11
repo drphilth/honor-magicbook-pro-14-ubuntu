@@ -1,2 +1,3 @@
 src/honor-fmbp-hwmon/honor-fmbp-hwmon.c usr/src/honor-fmbp-hwmon-1.0/
 src/honor-fmbp-hwmon/Makefile usr/src/honor-fmbp-hwmon-1.0/
+modules-load.d/honor-fmbp-hwmon.conf usr/lib/modules-load.d/

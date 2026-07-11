@@ -22,7 +22,13 @@ shipped here — install it yourself:
 
   1. sudo apt install gnome-shell-extension-manager   (pulled in by the metapackage)
   2. Open "Extension Manager" -> Browse -> search "Battery Health Charging" -> Install.
-  3. Log out and back in if the toggle does not appear immediately.
+  3. Switch to the "Installed" tab and make sure its toggle is ON. Installing does
+     not always enable it, and a system reinstall or home restore can leave it
+     present but disabled (so the Quick Settings panel silently never appears).
+     Equivalently from a terminal:
+         gnome-extensions enable Battery-Health-Charging@maniacx.github.com
+  4. Log out and back in if the toggle still does not appear (gnome-shell loads
+     extensions at session start).
 
 honor-fmbp-config pre-seeds this extension's presets (via a dconf system default) to
 match the ranges huawei-wmi enforces, so its panel is correct out of the box. These
