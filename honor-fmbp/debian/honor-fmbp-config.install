@@ -1,6 +1,7 @@
 config/udev/rules.d/99-honor-fmbp-touchscreen.rules usr/lib/udev/rules.d/
 config/udev/rules.d/99-honor-fmbp-touchscreen-toggle.rules usr/lib/udev/rules.d/
 config/udev/hwdb.d/61-honor-fmbp-keyboard.hwdb usr/lib/udev/hwdb.d/
+config/udev/hwdb.d/61-honor-fmbp-touchpad-ghost.hwdb usr/lib/udev/hwdb.d/
 bin/honor-fmbp-touchscreen-toggle usr/bin/
 default/honor-fmbp-battery etc/default/
 dconf/00-honor-fmbp-battery etc/dconf/db/local.d/
