@@ -8,6 +8,16 @@ readable summary.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+- **`apt update` no longer breaks after installing.** Following the README
+  (`add-apt-repository`, then `apt install honor-magicbook-pro-14`) left the
+  PPA configured twice with different keys, and apt refused to read its source
+  list ("Conflicting values set for option Signed-By"). The keyring package now
+  removes the duplicate on install. Already affected? See the note under the
+  install commands in the README.
+
 ## [1.0.5] — 2026-07-11
 
 ### Fixed
@@ -72,6 +82,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   corrected DSDT as an initramfs early ACPI override, udev/hwdb input quirks, and the
   `honor-magicbook-pro-14` metapackage.
 
+[Unreleased]: https://github.com/drphilth/honor-magicbook-pro-14-ubuntu/commits/main
 [1.0.5]: https://github.com/drphilth/honor-magicbook-pro-14-ubuntu/commits/main
 [1.0.4]: https://github.com/drphilth/honor-magicbook-pro-14-ubuntu/commits/main
 [1.0.3]: https://github.com/drphilth/honor-magicbook-pro-14-ubuntu/commits/main

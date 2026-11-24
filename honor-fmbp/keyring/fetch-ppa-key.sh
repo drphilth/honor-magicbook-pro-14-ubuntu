@@ -35,8 +35,21 @@ echo ">> fetching + dearmoring the key from keyserver.ubuntu.com"
 tmp="$(mktemp)"; trap 'rm -f "$tmp"' EXIT
 curl -fsSL "https://keyserver.ubuntu.com/pks/lookup?op=get&options=mr&search=0x${fpr}" > "$tmp"
 grep -q 'BEGIN PGP PUBLIC KEY' "$tmp" || { echo "!! keyserver did not return an armored key"; exit 1; }
-gpg --dearmor < "$tmp" > "$OUT"
-[ -s "$OUT" ] || { echo "!! dearmor produced empty output"; exit 1; }
+
+# The keyserver answer is not authenticated by itself: only ship it if it is exactly
+# one primary key whose fingerprint is the one Launchpad reports for the PPA.
+keys=$(gpg --batch --show-keys --with-colons "$tmp" 2>/dev/null) \
+  || { echo "!! gpg could not parse the keyserver answer"; exit 1; }
+npub=$(grep -c '^pub:' <<<"$keys" || true)
+got=$(awk -F: '/^pub:/ {p = 1; next} p && /^fpr:/ {print $10; exit}' <<<"$keys")
+[ "$npub" = 1 ] || { echo "!! expected exactly one key from the keyserver, got $npub"; exit 1; }
+[ "${got^^}" = "${fpr^^}" ] \
+  || { echo "!! fingerprint mismatch: Launchpad says $fpr, keyserver returned ${got:-none}"; exit 1; }
+echo "   keyserver key matches the Launchpad fingerprint"
+
+gpg --dearmor < "$tmp" > "$OUT.new"
+[ -s "$OUT.new" ] || { rm -f "$OUT.new"; echo "!! dearmor produced empty output"; exit 1; }
+mv "$OUT.new" "$OUT"
 
 echo ">> wrote $OUT ($(stat -c%s "$OUT") bytes)"
 echo "   verify:  gpg --show-keys --with-fingerprint $OUT"
