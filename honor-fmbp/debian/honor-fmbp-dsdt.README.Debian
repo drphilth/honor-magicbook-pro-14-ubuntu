@@ -42,9 +42,11 @@ touchscreen and report back on the project tracker.
 
 Forcing a variant (Chinese units, chroot / image builds)
 --------------------------------------------------------
-Whenever detection can't see the firmware table — a Chinese-market unit installed
-from the remastered ISO or over a GRUB override, or an image built on other
-hardware — force the choice (the ISO's install helper asks and does this for you):
+Whenever detection can't see the firmware table — installing from the remastered
+ISO or over a GRUB override, or an image built on other hardware — and you know the
+firmware is the Chinese variant, force the choice (the ISO's install helper asks and
+does this for you). The variant is not the sales region: units bought in China have
+needed the global table, so when in doubt keep global:
 
     echo chinese | sudo tee /etc/honor-fmbp/dsdt-force
     sudo honor-fmbp-dsdt-select        # re-selects and rebuilds the initramfs

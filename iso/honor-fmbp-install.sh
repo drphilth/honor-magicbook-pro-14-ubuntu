@@ -28,8 +28,11 @@
 #
 # BIOS SKU: this live session runs the GLOBAL corrected DSDT, so the firmware's
 # own table (which would tell global from Chinese) is not visible here. The
-# script asks; a Chinese answer is written to $TARGET/etc/honor-fmbp/dsdt-force
-# before the package is installed. Non-interactive: SKU=global|chinese.
+# script asks, defaulting to global: the variant is NOT the sales region (units
+# bought in China have needed the global table, colorcube issue #15), so only
+# pick Chinese when the firmware is known to be that variant. A Chinese answer
+# is written to $TARGET/etc/honor-fmbp/dsdt-force before the package is
+# installed. Non-interactive: SKU=global|chinese.
 #
 # The local repo is expected next to this script at ./repo (built by
 # boot/build-install-iso.sh); override with REPO=/path for testing.
@@ -171,10 +174,13 @@ if [ -e "$FORCE_FILE" ]; then
   echo ">> BIOS SKU: using the existing $FORCE_FILE ($(tr -d '[:space:]' < "$FORCE_FILE" || true))"
 else
   if [ -z "${SKU:-}" ] && [ "${ASSUME_YES:-0}" != 1 ]; then
-    echo "   This live session runs the GLOBAL corrected DSDT, so the BIOS variant can't be"
-    echo "   detected from here. Global units are the common case (and the hardware-tested"
-    echo "   table); Chinese-market units use different NVS addresses."
-    printf "   Is this a Chinese-market unit? [y/N]: "
+    echo "   This live session runs the GLOBAL corrected DSDT, so the firmware's DSDT variant"
+    echo "   (global or Chinese: they differ only in NVS addresses) can't be detected here."
+    echo "   Global is right for almost every unit, INCLUDING many bought in China, and is the"
+    echo "   hardware-tested table. Choose Chinese only if you know this unit's firmware is"
+    echo "   the Chinese variant (GNVS at 0x67E19018, e.g. seen in a stock boot); if in doubt,"
+    echo "   keep global. You can switch later: echo chinese | sudo tee /etc/honor-fmbp/dsdt-force"
+    printf "   Use the Chinese DSDT variant? [y/N]: "
     read -r ans </dev/tty || ans=""
     case "$ans" in y|Y|yes|YES) SKU=chinese ;; *) SKU=global ;; esac
   fi

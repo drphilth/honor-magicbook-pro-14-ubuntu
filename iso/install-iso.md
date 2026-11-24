@@ -87,10 +87,12 @@ the NVMe root, so without this the first boot hangs. So:
    (`honor-fmbp-config`), and the PPA apt source (`honor-fmbp-archive-keyring`). It verifies the DSDT
    actually landed in the installed initramfs before telling you it's safe to reboot.
 
-   It asks whether this is a **Chinese-market unit**: the live session runs the global
-   table, so the BIOS variant can't be detected from here. Answer "y" only for a Chinese
-   unit (pinned in `/etc/honor-fmbp/dsdt-force` on the installed system); the default is
-   global. Non-interactive: `sudo SKU=chinese ASSUME_YES=1 …/honor-fmbp-install.sh`.
+   It asks which **DSDT variant** to install: the live session runs the global table, so
+   the firmware's variant can't be detected from here. Keep the default, **global**, unless
+   you know the firmware is the Chinese variant (GNVS at `0x67E19018`). The variant is not
+   the sales region: units bought in China have needed the global table
+   ([colorcube#15](https://github.com/colorcube/Linux-on-Honor-Magicbook-14-Pro/issues/15)).
+   A Chinese answer is pinned in `/etc/honor-fmbp/dsdt-force` on the installed system. Non-interactive: `sudo SKU=chinese ASSUME_YES=1 …/honor-fmbp-install.sh`.
    *(If the installer already unmounted things, pass the root explicitly, e.g.
    `sudo mount /dev/nvme0n1p2 /mnt && sudo /media/cdrom/honor-fmbp/honor-fmbp-install.sh /mnt`.)*
 3. Reboot into the installed system — NVMe, touchpad and touchscreen work from boot #1.

@@ -32,9 +32,9 @@
 # A selection is only removed when DMI positively identifies a different machine.
 #
 # Override: put "global" or "chinese" (or an empty file, meaning global) in
-# /etc/honor-fmbp/dsdt-force to skip detection — e.g. a Chinese-SKU unit installed from
-# the remastered ISO (which always boots the global table), or an image build on other
-# hardware.
+# /etc/honor-fmbp/dsdt-force to skip detection — e.g. a Chinese-variant firmware installed
+# from the remastered ISO (which always boots the global table), or an image build on
+# other hardware. The variant is not the sales region (colorcube issue #15).
 set -e
 
 SHARE=/usr/share/honor-fmbp
@@ -113,7 +113,7 @@ else
         else
             sku=global
             warn "cannot read $TABLE -> defaulting to the global DSDT."
-            warn "If this is a Chinese-SKU unit: echo chinese | sudo tee $FORCE; sudo honor-fmbp-dsdt-select"
+            warn "If the firmware is the Chinese variant: echo chinese | sudo tee $FORCE; sudo honor-fmbp-dsdt-select"
         fi
     elif ! live_is_override; then
         # The firmware's own table: authoritative.
@@ -138,13 +138,13 @@ else
             sku=$cur; log "DSDT override active -> keeping the existing $cur selection"
         elif sku=$(table_sku); then
             warn "a DSDT override is active, so the SKU cannot be read from firmware -> using the"
-            warn "variant the running override carries ($sku). If this is wrong (e.g. a Chinese-SKU"
-            warn "unit booted from the remastered ISO, which always uses the global table):"
+            warn "variant the running override carries ($sku). If the firmware is in fact the other"
+            warn "variant (the remastered ISO always boots the global table):"
             warn "  echo chinese | sudo tee $FORCE; sudo honor-fmbp-dsdt-select"
         else
             sku=global
             warn "a DSDT override with unknown addresses is active -> defaulting to the global DSDT."
-            warn "If this is a Chinese-SKU unit: echo chinese | sudo tee $FORCE; sudo honor-fmbp-dsdt-select"
+            warn "If the firmware is the Chinese variant: echo chinese | sudo tee $FORCE; sudo honor-fmbp-dsdt-select"
         fi
     fi
 fi
