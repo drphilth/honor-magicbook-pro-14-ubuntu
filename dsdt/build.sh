@@ -5,8 +5,9 @@
 #
 #   IASL=/path/to/iasl ./build.sh        # or just ./build.sh if `iasl` is current
 #
-# Input : dsdt/original/DSDT        (raw STOCK table from /sys/firmware/acpi/tables/DSDT,
-#                                    dumped with no override active; BIOS 1.13/1.16/1.17)
+# Input : dsdt/original/DSDT        (raw STOCK table: a copy of /sys/firmware/acpi/tables/DSDT,
+#                                    or dsdt.dat from `acpidump -b`, taken with no override
+#                                    active; BIOS 1.13/1.16/1.17)
 # Output: dsdt/patched/dsdt.aml     (load via initrd override; Secure Boot OFF)
 #         dsdt/patched/clean-fix.patch
 set -euo pipefail
@@ -16,9 +17,17 @@ mkdir -p patched
 
 die() { echo "FATAL: $*" >&2; exit 1; }
 
-echo ">> [1] disassemble stock DSDT"
-"$IASL" -d original/DSDT >/dev/null 2>&1
-cp original/DSDT.dsl patched/dsdt.dsl
+command -v "$IASL" >/dev/null 2>&1 || die "iasl not found (install acpica-tools, or set IASL=)"
+# Accept acpidump's name as well: `acpidump -b` writes dsdt.dat, not DSDT.
+IN=original/DSDT
+[ -f "$IN" ] || [ ! -f original/dsdt.dat ] || IN=original/dsdt.dat
+[ -f "$IN" ] || die "no input table: put the stock DSDT at dsdt/original/DSDT
+       (sudo cat /sys/firmware/acpi/tables/DSDT > dsdt/original/DSDT, or acpidump -b's dsdt.dat)"
+
+echo ">> [1] disassemble stock DSDT ($IN)"
+"$IASL" -p original/stock -d "$IN" >/dev/null 2>&1 \
+  || { "$IASL" -p original/stock -d "$IN" 2>&1 | grep -v -E "^(Intel ACPI|ASL\+ Optimizing|Copyright|$)" | tail -15 >&2 || true; die "iasl -d failed on $IN"; }
+cp original/stock.dsl patched/dsdt.dsl
 
 # Firmware OEM revision (0x02 on BIOS 1.13/1.16/1.17). The override must carry a HIGHER
 # one or the kernel ignores it, so derive it from the input instead of hard-coding 0x02.
@@ -80,7 +89,7 @@ echo "       the stock \\_SB.PWRR method at load; harmless for the rest of the a
 [ -f patched/dsdt.aml ] || mv patched/DSDT.aml patched/dsdt.aml 2>/dev/null || true
 
 echo ">> [6] record the minimal source diff"
-diff original/DSDT.dsl patched/dsdt.dsl > patched/clean-fix.patch || true
+diff original/stock.dsl patched/dsdt.dsl > patched/clean-fix.patch || true
 cp patched/dsdt.aml patched/dsdt.global.aml
 
 echo ">> [7] derive the Chinese-SKU variant (NVS regions shifted +0x00100000)"
@@ -103,7 +112,7 @@ chinese_pairs=(
 )
 for pair in "${chinese_pairs[@]}"; do
   set -- $pair; g="$1"; c="$2"
-  n=$(grep -cF "$g" patched/dsdt.chinese.dsl)
+  n=$(grep -cF "$g" patched/dsdt.chinese.dsl || true)   # grep -c exits 1 on 0 matches
   [ "$n" -eq 1 ] || { echo "FATAL: expected exactly one '$g' in the patched DSDT, found $n."; \
     echo "       The DSDT layout changed — re-audit the global<->Chinese SKU deltas against"; \
     echo "       dsdt/reference/honor-fmb-p-dsdt/original/ before shipping a Chinese AML."; exit 1; }
