@@ -23,6 +23,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   Settings slider follow), and a race between the backlight `mode` setting and
   brightness changes is fixed.
 
+- **The battery charge limit is applied even if the WMI driver loads late** in
+  boot (previously it could be skipped for that boot).
+- The touchscreen udev rules no longer log errors on every boot.
+- Installing no longer risks corrupting a custom `/etc/dconf/profile/user`
+  that lacks a trailing newline.
+
 ### Changed
 - `sensors` labels the two fans.
 - The metapackage no longer pulls in `acpi-call-dkms`, which nothing uses any

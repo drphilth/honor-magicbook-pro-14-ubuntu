@@ -34,6 +34,13 @@ honor-fmbp (1.0.6) UNRELEASED; urgency=medium
     acpi_call since the touchscreen is powered by the DSDT PowerResource, and
     an out-of-tree DKMS module that fails to build on a new kernel leaves the
     package half-configured (it also needs MOK enrollment under Secure Boot).
+  * honor-fmbp-config: start honor-battery-thresholds.service when huawei-wmi
+    binds (new 99-honor-fmbp-battery.rules); if the driver probed after the
+    unit's boot-time check, the charge limit was not applied for that boot.
+  * honor-fmbp-config: the touchscreen udev rules only act on the eventN node
+    (they also matched inputN and remove events, logging RUN failures).
+  * honor-fmbp-config: postinst no longer glues system-db:local onto a dconf
+    profile that lacks a trailing newline.
 
  -- Manuel Rüger <manuel@rueg.eu>  Tue, 24 Nov 2026 10:27:07 +0100
 
