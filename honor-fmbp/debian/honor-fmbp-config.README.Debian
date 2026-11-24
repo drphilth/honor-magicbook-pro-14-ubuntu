@@ -4,8 +4,10 @@ honor-fmbp-config — input, device and power quirks for the HONOR MagicBook Pro
 Battery charge limit
 --------------------
 The EC enforces a charge limit only for three OEM preset ranges (arbitrary pairs
-are ignored) and does not remember it across reboots, so honor-battery-thresholds
-.service re-applies it at boot. It ships set to the balanced 70–90% preset.
+are ignored). It stores the pair in firmware and keeps it across reboots, but
+honor-battery-thresholds.service re-applies the configured preset at boot (and when
+huawei-wmi binds) anyway, so this file stays authoritative even after Windows or
+the BIOS changed it. It ships set to the balanced 70–90% preset.
 
   Presets (START END):  40 70  (max lifespan) / 70 90 (balanced) / 95 100 (max capacity)
   Change it:            edit /etc/default/honor-fmbp-battery, then
