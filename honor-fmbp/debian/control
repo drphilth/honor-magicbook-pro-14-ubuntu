@@ -66,6 +66,21 @@ Description: HONOR MagicBook Pro 14 (FMB-P) input, device and power quirks
   * a dconf default aligns the GNOME "Battery Health Charging" extension's
     Quick Settings presets with the ranges huawei-wmi actually enforces.
 
+Package: honor-fmbp-huawei-wmi-dkms
+Architecture: all
+Depends: ${misc:Depends}
+Description: HONOR MagicBook Pro 14 (FMB-P) hotkeys for huawei-wmi (DKMS, optional)
+ Replaces the in-tree huawei-wmi driver with the same mainline v7.0 source
+ plus the FMB-P hotkey codes: F3 touchpad on/off, F8 camera access toggle,
+ Fn+P (KEY_PROG1), Fn+R (refresh-rate toggle), and silences the EC
+ notifications that otherwise log "Unknown key pressed" hundreds of times
+ per boot.
+ .
+ Only built for 7.0 kernels (dkms BUILD_EXCLUSIVE_KERNEL); on any other
+ kernel the in-tree driver is used. Under Secure Boot the module must be
+ signed with an enrolled MOK, otherwise huawei-wmi (and with it the battery
+ charge limit) does not load at all - see the README.
+
 Package: honor-fmbp-archive-keyring
 Architecture: all
 Depends: ${misc:Depends}
@@ -91,6 +106,7 @@ Depends: honor-fmbp-hwmon-dkms (= ${source:Version}),
          libpam-fprintd,
          ${misc:Depends}
 Recommends: honor-fmbp-libfprint-sdcp, gnome-shell-extension-manager
+Suggests: honor-fmbp-huawei-wmi-dkms
 Description: HONOR MagicBook Pro 14 2025 (FMB-P) Ubuntu enablement (metapackage)
  Installs everything needed to run Ubuntu on the HONOR MagicBook Pro 14
  2025 (FMB-P): the corrected boot-critical DSDT, fan and keyboard
