@@ -5,8 +5,7 @@
 # apt repo bundled on this ISO, ENTIRELY OFFLINE:
 #
 #     honor-fmbp-dsdt             bakes the corrected DSDT into the INSTALLED
-#                                 initramfs (postinst GNVS-selects the SKU from
-#                                 the live firmware table + runs update-initramfs)
+#                                 initramfs (global or Chinese SKU, see below)
 #                                 -> first boot sees NVMe + touchpad
 #     honor-fmbp-config           input/power quirks (udev/hwdb/battery/dconf)
 #     honor-fmbp-archive-keyring  configures ppa:drphilth/honor-fmbp as a file
@@ -26,6 +25,11 @@
 # the installer left it mounted; otherwise it offers an interactive pick of the
 # installed Ubuntu roots it can find (the RUNNING system is always excluded, so
 # it can never target the live/host system by mistake).
+#
+# BIOS SKU: this live session runs the GLOBAL corrected DSDT, so the firmware's
+# own table (which would tell global from Chinese) is not visible here. The
+# script asks; a Chinese answer is written to $TARGET/etc/honor-fmbp/dsdt-force
+# before the package is installed. Non-interactive: SKU=global|chinese.
 #
 # The local repo is expected next to this script at ./repo (built by
 # boot/build-install-iso.sh); override with REPO=/path for testing.
@@ -159,6 +163,30 @@ if [ "${ASSUME_YES:-0}" != 1 ]; then
   read -r ans </dev/tty || ans=""
   [ "$ans" = YES ] || { echo "aborted — nothing written."; exit 1; }
 fi
+# ---- BIOS SKU: global or Chinese ------------------------------------------------
+# Detection can't work from here: /sys shows the global override this ISO booted,
+# not the firmware's table. An existing force file in the target wins.
+FORCE_FILE="$TARGET/etc/honor-fmbp/dsdt-force"
+if [ -e "$FORCE_FILE" ]; then
+  echo ">> BIOS SKU: using the existing $FORCE_FILE ($(tr -d '[:space:]' < "$FORCE_FILE" || true))"
+else
+  if [ -z "${SKU:-}" ] && [ "${ASSUME_YES:-0}" != 1 ]; then
+    echo "   This live session runs the GLOBAL corrected DSDT, so the BIOS variant can't be"
+    echo "   detected from here. Global units are the common case (and the hardware-tested"
+    echo "   table); Chinese-market units use different NVS addresses."
+    printf "   Is this a Chinese-market unit? [y/N]: "
+    read -r ans </dev/tty || ans=""
+    case "$ans" in y|Y|yes|YES) SKU=chinese ;; *) SKU=global ;; esac
+  fi
+  case "${SKU:-global}" in
+    global)  echo ">> BIOS SKU: global" ;;
+    chinese) mkdir -p "$(dirname "$FORCE_FILE")"
+             echo chinese > "$FORCE_FILE"
+             echo ">> BIOS SKU: chinese (pinned in $FORCE_FILE)" ;;
+    *)       echo "!! SKU must be 'global' or 'chinese', got '$SKU'"; exit 1 ;;
+  esac
+fi
+
 for m in $MOUNTS; do
   mkdir -p "$TARGET$m"
   mountpoint -q "$TARGET$m" || mount --bind "$m" "$TARGET$m"

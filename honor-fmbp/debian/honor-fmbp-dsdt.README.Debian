@@ -20,21 +20,31 @@ memory, so both corrected tables are shipped:
   /usr/share/honor-fmbp/dsdt.global.aml    (hardware-verified)
   /usr/share/honor-fmbp/dsdt.chinese.aml   (UNTESTED on real Chinese hardware)
 
-At install the postinst runs `honor-fmbp-dsdt-select`, which reads the live firmware
-DSDT (/sys/firmware/acpi/tables/DSDT), matches the GNVS base signature, and points
-the canonical /usr/share/honor-fmbp/dsdt.aml symlink at the right variant. The
-initramfs hook simply ships whatever that symlink resolves to; the SKU is a hardware
-constant, so it is detected once here rather than on every kernel update.
+At install the postinst runs `honor-fmbp-dsdt-select`, which points the canonical
+/usr/share/honor-fmbp/dsdt.aml symlink at the right variant; the initramfs hook simply
+ships whatever that symlink resolves to. How it decides:
+
+  * The firmware's own DSDT is live (no override active): the GNVS base in
+    /sys/firmware/acpi/tables/DSDT identifies the SKU. This is authoritative and
+    also corrects an earlier selection.
+  * An override is live (this package's, or a GRUB `acpi` table, or the remastered
+    install ISO, which always boots the global table): /sys then shows the
+    override, not the firmware, so the SKU cannot be read. An existing selection
+    is kept; with none yet, the variant the running override carries is used and
+    a warning is printed.
+  * Unknown address, unreadable table or DMI: an existing selection is never
+    dropped or switched. Only when DMI shows a different machine is it removed.
 
 The Chinese variant is derived from the same source as the global one (identical
 fixes, only the NVS addresses shifted) but nobody has yet booted it on a Chinese-SKU
 machine. If you have one, please confirm it boots with a working touchpad, NVMe and
 touchscreen and report back on the project tracker.
 
-Forcing a variant (chroot / image builds)
------------------------------------------
-If you install from a chroot or live image, the live firmware table is the build
-host's, not the target's, so auto-detection may be wrong. Force a choice:
+Forcing a variant (Chinese units, chroot / image builds)
+--------------------------------------------------------
+Whenever detection can't see the firmware table — a Chinese-market unit installed
+from the remastered ISO or over a GRUB override, or an image built on other
+hardware — force the choice (the ISO's install helper asks and does this for you):
 
     echo chinese | sudo tee /etc/honor-fmbp/dsdt-force
     sudo honor-fmbp-dsdt-select        # re-selects and rebuilds the initramfs
@@ -59,6 +69,14 @@ honor-fmbp-dsdt-select feeds both: it points /usr/share/honor-fmbp/dsdt.aml (the
 hook's source) and keeps /usr/share/honor-fmbp/acpi/ holding just the selected AML
 (dracut's table dir) in sync, then rebuilds the initramfs via update-initramfs,
 which the active generator owns.
+
+Removing this package
+---------------------
+Removing honor-fmbp-dsdt drops the override from the next initramfs; on BIOS
+1.13/1.16 the machine then boots without NVMe. On an FMB-P with an active selection
+the package therefore refuses removal (this also catches `apt autoremove` after the
+metapackage is removed). Keep it with `sudo apt-mark manual honor-fmbp-dsdt`, or opt
+in to removal with `sudo touch /etc/honor-fmbp/allow-dsdt-removal`.
 
 Emergency fallback
 ------------------

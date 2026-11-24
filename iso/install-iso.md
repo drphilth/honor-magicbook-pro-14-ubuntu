@@ -82,10 +82,15 @@ the NVMe root, so without this the first boot hangs. So:
    ```
 
    It finds the freshly-installed system, chroots it, and installs — **entirely offline, from a deb
-   repo baked on this ISO** — the boot-critical `honor-fmbp-dsdt` (which GNVS-detects your BIOS SKU
-   and bakes the right DSDT into the installed initramfs), the input/power quirks
+   repo baked on this ISO** — the boot-critical `honor-fmbp-dsdt` (which bakes the DSDT into the
+   installed initramfs), the input/power quirks
    (`honor-fmbp-config`), and the PPA apt source (`honor-fmbp-archive-keyring`). It verifies the DSDT
    actually landed in the installed initramfs before telling you it's safe to reboot.
+
+   It asks whether this is a **Chinese-market unit**: the live session runs the global
+   table, so the BIOS variant can't be detected from here. Answer "y" only for a Chinese
+   unit (pinned in `/etc/honor-fmbp/dsdt-force` on the installed system); the default is
+   global. Non-interactive: `sudo SKU=chinese ASSUME_YES=1 …/honor-fmbp-install.sh`.
    *(If the installer already unmounted things, pass the root explicitly, e.g.
    `sudo mount /dev/nvme0n1p2 /mnt && sudo /media/cdrom/honor-fmbp/honor-fmbp-install.sh /mnt`.)*
 3. Reboot into the installed system — NVMe, touchpad and touchscreen work from boot #1.

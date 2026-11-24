@@ -54,9 +54,11 @@ one command, then a normal install with one extra step before the first reboot.
 
 If you already have Ubuntu running on this machine (i.e. you applied some DSDT
 workaround yourself, typically a GRUB ACPI override), just add the PPA and install the
-metapackage as at the top. `honor-fmbp-dsdt` detects your BIOS SKU and bakes the
-corrected table into the initramfs (initramfs-tools and dracut both supported) — after
-verifying a reboot, you can retire your hand-rolled override.
+metapackage as at the top. `honor-fmbp-dsdt` bakes the corrected table into the
+initramfs (initramfs-tools and dracut both supported) — after verifying a reboot, you can
+retire your hand-rolled override. While your own override is active the BIOS SKU can't be
+read from firmware, so the package uses the variant your override carries and says so;
+on a **Chinese-market unit** force it first: `echo chinese | sudo tee /etc/honor-fmbp/dsdt-force`.
 
 ## Packages
 
@@ -65,7 +67,7 @@ One source package (`honor-fmbp`, in [`honor-fmbp/`](honor-fmbp/)) builds:
 | Package | Contents |
 |---|---|
 | `honor-magicbook-pro-14` | metapackage — everything below + `acpi-call-dkms`, `firmware-sof-signed`, `libpam-fprintd` |
-| `honor-fmbp-dsdt` | corrected DSDT (both SKUs), GNVS SKU auto-detect, initramfs-tools/dracut early-ACPI override |
+| `honor-fmbp-dsdt` | corrected DSDT (both SKUs), SKU auto-detect from stock firmware, initramfs-tools/dracut early-ACPI override |
 | `honor-fmbp-config` | input/device quirks (udev + hwdb), touchscreen toggle, battery-threshold unit + presets, battery-extension dconf defaults |
 | `honor-fmbp-hwmon-dkms` | fan-RPM hwmon driver (EC, reverse-engineered) |
 | `honor-fmbp-kbdlight-dkms` | keyboard-backlight LED driver (EC `KBBL`; native GNOME/KDE control) |
