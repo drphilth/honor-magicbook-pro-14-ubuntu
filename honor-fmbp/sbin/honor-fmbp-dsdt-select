@@ -64,11 +64,14 @@ table_sku() {
 # Is the live DSDT an override rather than the firmware's own table?
 #   "TD_P" (54 44 5f 50): our injected touchscreen package — ours and colorcube's tables.
 #   no "NFC0" (4e 46 43 30): denis-bb's table deletes the device; every firmware has it.
-#   kernel log "Table Upgrade: override [DSDT": any initrd override (if the log has it).
+#   kernel log "Table Upgrade: override [DSDT" (journal + dmesg): any initrd override.
 live_is_override() {
     has '54 44 5f 50' && return 0
     has '4e 46 43 30' || return 0
-    dmesg 2>/dev/null | grep -q 'Table Upgrade: override \[DSDT' && return 0
+    # Search both: the journal keeps the whole boot (the dmesg ring buffer may have
+    # wrapped), but can be empty or absent, e.g. in an installer chroot.
+    { journalctl -k -b -q 2>/dev/null; dmesg 2>/dev/null; } \
+        | grep -q 'Table Upgrade: override \[DSDT' && return 0
     return 1
 }
 
