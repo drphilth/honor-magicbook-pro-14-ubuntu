@@ -1,0 +1,7 @@
+# HONOR MagicBook Pro 14 (FMB-P): apply the battery charge limit once huawei-wmi is
+# ready. honor-battery-thresholds.service is also wanted by multi-user.target, but its
+# ConditionPathExists is evaluated once: if huawei-wmi (loaded by modalias) had not
+# probed yet, the unit was skipped for that boot and the EC kept the old limit.
+# "bind" fires after the driver's probe, i.e. once charge_control_thresholds exists
+# ("add" comes before probe). If the unit already ran this boot, this is a no-op.
+ACTION=="bind", SUBSYSTEM=="platform", KERNEL=="huawei-wmi", TAG+="systemd", ENV{SYSTEMD_WANTS}+="honor-battery-thresholds.service"

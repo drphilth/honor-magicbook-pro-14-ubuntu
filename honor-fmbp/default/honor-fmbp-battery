@@ -7,8 +7,8 @@
 #   70 90    balanced (default)
 #   95 100   maximise capacity
 #
-# Format is "START END". Requires BIOS >= 1.16 (earlier firmware exposes the sysfs
-# node but does not enforce it).
+# Format is "START END". Verified on BIOS 1.13 and 1.16; any other pair is accepted
+# by sysfs but not enforced by the EC.
 #
 # Apply a change:   sudo systemctl restart honor-battery-thresholds.service
 # Check the result: cat /sys/devices/platform/huawei-wmi/charge_control_thresholds

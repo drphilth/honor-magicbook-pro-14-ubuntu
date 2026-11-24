@@ -36,7 +36,7 @@ static int read_fan_rpm(u8 lsb, long *val)
 static umode_t honor_hwmon_is_visible(const void *data, enum hwmon_sensor_types type,
 				      u32 attr, int channel)
 {
-	if (type == hwmon_fan && attr == hwmon_fan_input)
+	if (type == hwmon_fan && (attr == hwmon_fan_input || attr == hwmon_fan_label))
 		return 0444;
 	return 0;
 }
@@ -56,13 +56,27 @@ static int honor_hwmon_read(struct device *dev, enum hwmon_sensor_types type,
 	}
 }
 
+static const char * const honor_fan_labels[] = { "fan1", "fan2" };
+
+static int honor_hwmon_read_string(struct device *dev, enum hwmon_sensor_types type,
+				   u32 attr, int channel, const char **str)
+{
+	if (type != hwmon_fan || attr != hwmon_fan_label ||
+	    channel >= ARRAY_SIZE(honor_fan_labels))
+		return -EOPNOTSUPP;
+	*str = honor_fan_labels[channel];
+	return 0;
+}
+
 static const struct hwmon_ops honor_hwmon_ops = {
 	.is_visible = honor_hwmon_is_visible,
 	.read = honor_hwmon_read,
+	.read_string = honor_hwmon_read_string,
 };
 
 static const struct hwmon_channel_info * const honor_hwmon_info[] = {
-	HWMON_CHANNEL_INFO(fan, HWMON_F_INPUT, HWMON_F_INPUT),
+	HWMON_CHANNEL_INFO(fan, HWMON_F_INPUT | HWMON_F_LABEL,
+			   HWMON_F_INPUT | HWMON_F_LABEL),
 	NULL
 };
 
@@ -80,6 +94,7 @@ static const struct dmi_system_id honor_fmbp[] = {
 	} },
 	{ }
 };
+MODULE_DEVICE_TABLE(dmi, honor_fmbp);   /* DMI modalias: udev autoloads on the FMB-P only */
 
 static int __init honor_hwmon_init(void)
 {

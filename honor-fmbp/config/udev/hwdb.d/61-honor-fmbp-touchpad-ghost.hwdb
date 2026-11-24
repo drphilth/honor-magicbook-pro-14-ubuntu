@@ -1,0 +1,15 @@
+# Honor MagicBook Pro 14 (FMB-P): the Goodix GXT7863 touchpad exposes two
+# vendor HID collections (usage pages FF00/FF01) that Windows binds no driver
+# to. Linux hid-input maps their usages one by one; the device then emits a
+# KEY_BRIGHTNESSUP press on the vendor page without ever sending the release,
+# and the kernel autorepeats it at ~30 Hz, pinning the backlight to 100%.
+# Drop the two brightness usages at the kernel level.
+#
+# 0xff010001 (micmute) has the same stuck-press defect: after resume it can
+# toggle the microphone at autorepeat rate until another key is pressed. The
+# real mic-mute key (F7) arrives via huawei-wmi ("Huawei WMI hotkeys"), so this
+# usage is not needed and is dropped too (colorcube/Linux-on-Honor-Magicbook-14-Pro#35).
+evdev:input:b0018v27C6p01E0*
+ KEYBOARD_KEY_ff010003=reserved
+ KEYBOARD_KEY_ff010004=reserved
+ KEYBOARD_KEY_ff010001=reserved

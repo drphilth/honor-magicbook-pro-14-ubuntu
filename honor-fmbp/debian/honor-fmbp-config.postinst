@@ -21,6 +21,9 @@ if [ "$1" = "configure" ]; then
         mkdir -p /etc/dconf/profile
         printf 'user-db:user\nsystem-db:local\n' > "$profile"
     elif ! grep -qx 'system-db:local' "$profile"; then
+        # Add a newline first if the file lacks a trailing one, or the append
+        # glues onto the last line (e.g. "system-db:gdmsystem-db:local").
+        [ -z "$(tail -c1 "$profile")" ] || echo >> "$profile"
         echo 'system-db:local' >> "$profile"
     fi
     dconf update || true

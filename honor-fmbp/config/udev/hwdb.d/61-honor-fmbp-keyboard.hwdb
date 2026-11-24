@@ -1,4 +1,10 @@
-# Honor MagicBook 14 Pro (FMB-P): the EC sends scancode e078 alongside Fn
-# hotkey presses; it carries no meaning — map to unknown to silence dmesg.
-evdev:atkbd:dmi:bvn*:bvr*:bd*:svnHONOR*:pn*:*
+# Honor MagicBook 14 Pro (FMB-P): alongside Fn hotkey presses (whose real function
+# arrives via huawei-wmi) the EC also sends meaningless PS/2 scancodes:
+#   e078 - with Fn hotkey presses
+#   f8   - with Fn+F1/F2/F3/F5/F7/F8/F10/F11 (BIOS 1.13; found by colorcube,
+#          https://github.com/colorcube/Linux-on-Honor-Magicbook-14-Pro)
+# Map them to "unknown" so atkbd stops logging "Unknown key pressed".
+# Matched to the FMB-P only: other HONOR models may use these scancodes for real keys.
+evdev:atkbd:dmi:bvn*:bvr*:bd*:svnHONOR:pnFMB-P:*
  KEYBOARD_KEY_e078=unknown
+ KEYBOARD_KEY_f8=unknown

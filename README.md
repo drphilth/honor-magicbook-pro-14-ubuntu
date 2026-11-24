@@ -30,8 +30,9 @@ With these packages, effectively everything:
 | Audio (Intel cAVS / SOF) | ✅ Intel SOF firmware (`firmware-sof-signed` — standard on Ubuntu; the metapackage guarantees it) |
 | Fan RPM readout (`sensors`) | ✅ `honor-fmbp-hwmon-dkms` (custom EC driver) |
 | Keyboard backlight (GNOME Quick Settings, off/low/high) | ✅ `honor-fmbp-kbdlight-dkms` (custom EC driver; re-login once after install) |
-| Battery charge-limit presets (40–70 / 70–90 / 95–100) | ✅ `honor-fmbp-config` (huawei-wmi + restore unit; BIOS ≥ 1.16) |
+| Battery charge-limit presets (40–70 / 70–90 / 95–100) | ✅ `honor-fmbp-config` (huawei-wmi + restore unit; BIOS 1.13 / 1.16) |
 | Fn keys, LEDs, keyboard quirks | ✅ native on kernel 7.0 + a small hwdb fix |
+| Touchpad ghost brightness / mic-mute keys | ✅ `honor-fmbp-config` (hwdb drops the touchpad's vendor HID usages) |
 | Fingerprint (EgisTec ET171, SDCP/Windows-Hello match-on-chip) | ✅ [`honor-fmbp-libfprint-sdcp`](https://github.com/drphilth/honor-fmbp-libfprint-sdcp) (pulled in via Recommends) |
 
 ## Installing
@@ -64,7 +65,7 @@ One source package (`honor-fmbp`, in [`honor-fmbp/`](honor-fmbp/)) builds:
 
 | Package | Contents |
 |---|---|
-| `honor-magicbook-pro-14` | metapackage — everything below + `acpi-call-dkms`, `firmware-sof-signed`, `libpam-fprintd` |
+| `honor-magicbook-pro-14` | metapackage — everything below + `firmware-sof-signed`, `libpam-fprintd` |
 | `honor-fmbp-dsdt` | corrected DSDT (both SKUs), GNVS SKU auto-detect, initramfs-tools/dracut early-ACPI override |
 | `honor-fmbp-config` | input/device quirks (udev + hwdb), touchscreen toggle, battery-threshold unit + presets, battery-extension dconf defaults |
 | `honor-fmbp-hwmon-dkms` | fan-RPM hwmon driver (EC, reverse-engineered) |
@@ -86,6 +87,10 @@ your own firmware dump): [`dsdt/`](dsdt/).
 
 **Two BIOS SKUs exist** (global / Chinese), identical except for six NVS base addresses;
 `honor-fmbp-dsdt` ships both tables and auto-detects yours at install time.
+**BIOS 1.17** fixes the NFC0 load abort in firmware but still lacks the touchscreen
+power resource, so the override is still needed (for the touchscreen only); the shipped
+tables are expected to work there (1.17 changes only `NFC0`, OEM revision stays `0x02`),
+but this is not yet confirmed on 1.17 hardware.
 The **global** variant is hardware-tested (this project's reference unit). The
 **Chinese** variant is built through the same pipeline but **unverified on real
 hardware** — if you own a Chinese-SKU unit, please test and report back in an issue.

@@ -28,7 +28,7 @@
 # it can never target the live/host system by mistake).
 #
 # The local repo is expected next to this script at ./repo (built by
-# boot/build-install-iso.sh); override with REPO=/path for testing.
+# iso/build-install-iso.sh); override with REPO=/path for testing.
 set -euo pipefail
 
 here="$(cd "$(dirname "$0")" && pwd)"

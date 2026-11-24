@@ -8,6 +8,39 @@ readable summary.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/).
 
+## [Unreleased]
+
+### Fixed
+- **Touchpad no longer makes the screen jump between dark and full brightness.**
+  The touchpad sends phantom brightness-key presses that never release; a new
+  hwdb rule drops them in the kernel. The same rule stops the microphone
+  toggling on and off by itself after resume (the real F7 mic-mute key is
+  unaffected).
+- No more "Unknown key pressed" log spam for Fn+F1–F11 (scancode `f8`).
+- The keyboard quirk now applies only to the FMB-P instead of every HONOR
+  laptop.
+- **Fn+Space keyboard-backlight changes now show up in GNOME** (OSD and Quick
+  Settings slider follow), and a race between the backlight `mode` setting and
+  brightness changes is fixed.
+
+- **The battery charge limit is applied even if the WMI driver loads late** in
+  boot (previously it could be skipped for that boot).
+- The touchscreen udev rules no longer log errors on every boot.
+- Installing no longer risks corrupting a custom `/etc/dconf/profile/user`
+  that lacks a trailing newline.
+
+### Changed
+- `sensors` labels the two fans.
+- The metapackage no longer pulls in `acpi-call-dkms`, which nothing uses any
+  more and which can fail to build on new kernels. If it was only installed for
+  this package, `sudo apt autoremove` removes it.
+
+### Documentation
+- Battery charge-limit presets work on BIOS 1.13 too, not only 1.16+.
+- BIOS 1.17 notes: it fixes the NVMe/touchpad DSDT bug in firmware, but the
+  touchscreen still needs this package's DSDT.
+- `dsdt/build.sh` handles BIOS 1.17 tables and future OEM revision bumps.
+
 ## [1.0.5] — 2026-07-11
 
 ### Fixed
@@ -72,6 +105,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
   corrected DSDT as an initramfs early ACPI override, udev/hwdb input quirks, and the
   `honor-magicbook-pro-14` metapackage.
 
+[Unreleased]: https://github.com/drphilth/honor-magicbook-pro-14-ubuntu/commits/main
 [1.0.5]: https://github.com/drphilth/honor-magicbook-pro-14-ubuntu/commits/main
 [1.0.4]: https://github.com/drphilth/honor-magicbook-pro-14-ubuntu/commits/main
 [1.0.3]: https://github.com/drphilth/honor-magicbook-pro-14-ubuntu/commits/main
