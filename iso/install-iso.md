@@ -5,6 +5,12 @@ abort that hides the NVMe drive and breaks the touchpad. So before installing, r
 ISO to carry the corrected DSDT (and a clean touchscreen). This is a one-command, fully reversible
 step — your current install is untouched, and you can rebuild/boot test ISOs freely.
 
+> **Turn Secure Boot off before booting this ISO** (firmware: F2 → set a supervisor password
+> if asked → Secure Boot → Disabled). The ISO's fix is an initrd ACPI table override, which
+> kernel lockdown under Secure Boot is designed to refuse; kernel 7.0 happens to apply it
+> anyway (see the README's [Secure Boot](../README.md#secure-boot) section), but if a kernel
+> ignores it the installer runs without NVMe and touchpad again.
+
 ## Build it
 
 ```bash
