@@ -20,9 +20,21 @@
 # this — under a UTF-8 locale it matches Unicode codepoints, not raw bytes, and silently
 # finds nothing.)
 #
+# Only the FIRMWARE's own table tells the SKU. While an override is active (ours via the
+# initramfs, colorcube's, or denis-bb's via GRUB `acpi`), /sys shows the override, which
+# carries the addresses of whichever variant was loaded — so re-detecting from it would
+# just echo an earlier (possibly wrong) choice back, or flip a correct one. Hence:
+#   * firmware table live  -> detect; this is authoritative and may correct a selection.
+#   * override live        -> keep the existing selection; with none yet (first install
+#                             from the remastered ISO, or over a GRUB override) fall back
+#                             to the variant the running override uses, and say so.
+#   * detection impossible or ambiguous -> never drop or switch an existing selection.
+# A selection is only removed when DMI positively identifies a different machine.
+#
 # Override: put "global" or "chinese" (or an empty file, meaning global) in
-# /etc/honor-fmbp/dsdt-force to skip detection — for installs from a chroot/image build
-# where the live firmware table is the build host's, not the target's.
+# /etc/honor-fmbp/dsdt-force to skip detection — e.g. a Chinese-SKU unit installed from
+# the remastered ISO (which always boots the global table), or an image build on other
+# hardware.
 set -e
 
 SHARE=/usr/share/honor-fmbp
@@ -35,40 +47,105 @@ run_initramfs=1
 [ "$1" = "--postinst" ] && run_initramfs=0   # postinst lets the dpkg initramfs trigger rebuild
 
 log() { echo "honor-fmbp-dsdt: $*" >&2; }
+warn() { log "WARNING: $*"; }
 
-detect_sku() {
-    [ -r "$TABLE" ] || return 1
-    if od -An -v -tx1 "$TABLE" | tr -s ' \n' ' ' | grep -q '0c 18 90 e0 67'; then
-        echo global; return 0
+HEX=""
+[ -r "$TABLE" ] && HEX=$(od -An -v -tx1 "$TABLE" | tr -s ' \n' ' ')
+has() { case "$HEX" in *"$1"*) return 0 ;; esac; return 1; }
+
+# SKU whose GNVS address the live table carries (firmware's or an override's).
+table_sku() {
+    if has '0c 18 90 e0 67'; then echo global
+    elif has '0c 18 90 e1 67'; then echo chinese
+    else return 1
     fi
-    if od -An -v -tx1 "$TABLE" | tr -s ' \n' ' ' | grep -q '0c 18 90 e1 67'; then
-        echo chinese; return 0
-    fi
+}
+
+# Is the live DSDT an override rather than the firmware's own table?
+#   "TD_P" (54 44 5f 50): our injected touchscreen package — ours and colorcube's tables.
+#   no "NFC0" (4e 46 43 30): denis-bb's table deletes the device; every firmware has it.
+#   kernel log "Table Upgrade: override [DSDT": any initrd override (if the log has it).
+live_is_override() {
+    has '54 44 5f 50' && return 0
+    has '4e 46 43 30' || return 0
+    dmesg 2>/dev/null | grep -q 'Table Upgrade: override \[DSDT' && return 0
     return 1
 }
 
-sku=""
+# SKU of the existing selection ("" if none).
+current_sku() {
+    case "$(readlink "$CANON" 2>/dev/null || true)" in
+        dsdt.global.aml)  echo global ;;
+        dsdt.chinese.aml) echo chinese ;;
+    esac
+}
+
+cur=$(current_sku)
+sku=""          # what to select; stays "" -> no selection
+remove=0        # 1 -> drop the selection (positively not an FMB-P)
+
 if [ -e "$FORCE" ]; then
     sku=$(tr -d '[:space:]' < "$FORCE" 2>/dev/null || true)
     case "$sku" in
         global|chinese) log "SKU forced to '$sku' via $FORCE" ;;
         "")             sku=global; log "empty $FORCE -> forcing global DSDT" ;;
-        *)              log "unrecognised '$sku' in $FORCE -> forcing global DSDT"; sku=global ;;
+        *)              log "ERROR: unrecognised '$sku' in $FORCE (use global or chinese) -> nothing changed"
+                        exit 1 ;;
     esac
 else
     vendor=$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || true)
     product=$(cat /sys/class/dmi/id/product_name 2>/dev/null || true)
-    if [ "$vendor" = "HONOR" ] && [ "$product" = "FMB-P" ]; then
-        if sku=$(detect_sku); then
-            log "detected $sku SKU from firmware DSDT"
+    if [ -z "$vendor" ] && [ -z "$product" ]; then
+        # No DMI (container, chroot without /sys): we know nothing about this machine.
+        if [ -n "$cur" ]; then
+            sku=$cur; log "DMI unreadable -> keeping the existing $cur selection"
         else
-            sku=global
-            log "could not read/decode the firmware DSDT -> defaulting to global."
-            log "If this is a Chinese-SKU unit: echo chinese | sudo tee $FORCE; sudo honor-fmbp-dsdt-select"
+            log "DMI unreadable -> no DSDT override selected"
+            log "(create $FORCE to force a selection for image builds)"
         fi
-    else
+    elif [ "$vendor" != "HONOR" ] || [ "$product" != "FMB-P" ]; then
+        remove=1
         log "not an HONOR FMB-P (DMI: ${vendor:-?}/${product:-?}) -> no DSDT override selected"
         log "(create $FORCE to force a selection for image builds on other hardware)"
+    elif [ -z "$HEX" ]; then
+        if [ -n "$cur" ]; then
+            sku=$cur; warn "cannot read $TABLE -> keeping the existing $cur selection"
+        else
+            sku=global
+            warn "cannot read $TABLE -> defaulting to the global DSDT."
+            warn "If this is a Chinese-SKU unit: echo chinese | sudo tee $FORCE; sudo honor-fmbp-dsdt-select"
+        fi
+    elif ! live_is_override; then
+        # The firmware's own table: authoritative.
+        if sku=$(table_sku); then
+            if [ -n "$cur" ] && [ "$cur" != "$sku" ]; then
+                warn "firmware DSDT is the $sku variant but $cur was selected -> switching to $sku"
+            else
+                log "detected $sku SKU from the firmware DSDT"
+            fi
+        elif [ -n "$cur" ]; then
+            sku=$cur
+            warn "firmware DSDT matches no known SKU (new BIOS?) -> keeping the existing $cur selection"
+        else
+            sku=""
+            warn "firmware DSDT matches no known SKU (new BIOS or memory layout?) -> NO override selected."
+            warn "Without it this machine may boot without NVMe/touchpad. Build a table from your own"
+            warn "firmware (dsdt/build.sh in the source repo) or force one: echo global | sudo tee $FORCE"
+        fi
+    else
+        # An override is live; its addresses only reflect an earlier choice.
+        if [ -n "$cur" ]; then
+            sku=$cur; log "DSDT override active -> keeping the existing $cur selection"
+        elif sku=$(table_sku); then
+            warn "a DSDT override is active, so the SKU cannot be read from firmware -> using the"
+            warn "variant the running override carries ($sku). If this is wrong (e.g. a Chinese-SKU"
+            warn "unit booted from the remastered ISO, which always uses the global table):"
+            warn "  echo chinese | sudo tee $FORCE; sudo honor-fmbp-dsdt-select"
+        else
+            sku=global
+            warn "a DSDT override with unknown addresses is active -> defaulting to the global DSDT."
+            warn "If this is a Chinese-SKU unit: echo chinese | sudo tee $FORCE; sudo honor-fmbp-dsdt-select"
+        fi
     fi
 fi
 
@@ -81,9 +158,10 @@ if [ -n "$sku" ]; then
     rm -f "$ACPIDIR"/*.aml
     # A real copy, NOT a symlink: dracut's DRACUT_CP is `cp -dfrp` (no-dereference), so a
     # symlink here would land in the early cpio dangling and the kernel would find no table.
+    # Re-copied on every run so a package upgrade's new AML reaches dracut too.
     cp -f "$SHARE/dsdt.$sku.aml" "$ACPIDIR/dsdt.aml"
     log "selected $sku DSDT ($CANON -> dsdt.$sku.aml)"
-else
+elif [ "$remove" = 1 ] || [ -z "$cur" ]; then
     rm -f "$CANON"
     rm -rf "$ACPIDIR"                               # no dir => dracut's acpi_override guard skips
 fi
