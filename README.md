@@ -32,7 +32,8 @@ With these packages, effectively everything:
 | Keyboard backlight (GNOME Quick Settings, off/low/high) | ✅ `honor-fmbp-kbdlight-dkms` (custom EC driver; re-login once after install) |
 | Battery charge-limit presets (40–70 / 70–90 / 95–100) | ✅ `honor-fmbp-config` (huawei-wmi + restore unit; BIOS ≥ 1.16) |
 | Fn keys, LEDs, keyboard quirks | ✅ native on kernel 7.0 + a small hwdb fix |
-| Fingerprint (EgisTec ET171, SDCP/Windows-Hello match-on-chip) | ✅ [`honor-fmbp-libfprint-sdcp`](https://github.com/drphilth/honor-fmbp-libfprint-sdcp) (pulled in via Recommends) |
+| Fingerprint — EgisTec ET171 `1c7a:05aa` (SDCP/Windows-Hello match-on-chip) | ✅ [`honor-fmbp-libfprint-sdcp`](https://github.com/drphilth/honor-fmbp-libfprint-sdcp) (pulled in via Recommends) |
+| Fingerprint — FPC `10a5:9924` (the other sensor variant; `lsusb \| grep -iE '10a5\|1c7a'` tells which you have) | ✅ same package, from its `honor9` release (fpcmoc + libfprint MR !666) |
 
 ## Installing
 
@@ -146,7 +147,8 @@ See [CHANGELOG.md](CHANGELOG.md) for the version history (per-package detail in
 - **EvernightFedora**'s FMB-P Fedora work — independent cross-check of the hardware
   matrix and the first ET171 fingerprint enablement.
 - The **libfprint** project — the fingerprint package tracks upstream's SDCP branch
-  (merge request 547).
+  (merge request 547); FPC `10a5:9924` support is Lukas Thomann's merge request 666, with
+  the USB-reset finding by nikube and testing by colorcube.
 
 ## License
 
