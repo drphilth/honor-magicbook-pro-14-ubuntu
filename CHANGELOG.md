@@ -19,6 +19,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/).
 - No more "Unknown key pressed" log spam for Fn+F1–F11 (scancode `f8`).
 - The keyboard quirk now applies only to the FMB-P instead of every HONOR
   laptop.
+- **Fn+Space keyboard-backlight changes now show up in GNOME** (OSD and Quick
+  Settings slider follow), and a race between the backlight `mode` setting and
+  brightness changes is fixed.
+
+### Changed
+- `sensors` labels the two fans.
+- The metapackage no longer pulls in `acpi-call-dkms`, which nothing uses any
+  more and which can fail to build on new kernels. If it was only installed for
+  this package, `sudo apt autoremove` removes it.
 
 ### Documentation
 - Battery charge-limit presets work on BIOS 1.13 too, not only 1.16+.

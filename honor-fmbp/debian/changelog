@@ -19,6 +19,21 @@ honor-fmbp (1.0.6) UNRELEASED; urgency=medium
     that runs at table load (NFC0 body depth), leaving the one 1.17 moved
     into NFC0._CRS; bumps the OEM revision to firmware revision + 1 instead
     of hard-coding 0x02 -> 0x03; refuses an already-patched input table.
+  * honor-fmbp-kbdlight-dkms: report Fn+Space level changes to the desktop.
+    The EC cycles KBBL itself; the driver now polls it (poll_ms, default
+    300, 0 = off) and signals changes via brightness_hw_changed, so the
+    GNOME OSD and Quick Settings slider follow. A mutex now serialises
+    brightness writes, mode changes and the poll (a sysfs mode write racing
+    a brightness change could leave the EC at a stale level).
+    (colorcube/Linux-on-Honor-Magicbook-14-Pro#38)
+  * honor-fmbp-hwmon-dkms: label the fans (fan1/fan2) in sensors.
+  * honor-fmbp-hwmon-dkms, honor-fmbp-kbdlight-dkms: add a DMI device table,
+    so udev can autoload the modules on the FMB-P via the DMI modalias. The
+    modules-load.d drop-ins stay until that is confirmed on hardware.
+  * honor-magicbook-pro-14: drop the acpi-call-dkms dependency. Nothing uses
+    acpi_call since the touchscreen is powered by the DSDT PowerResource, and
+    an out-of-tree DKMS module that fails to build on a new kernel leaves the
+    package half-configured (it also needs MOK enrollment under Secure Boot).
 
  -- Manuel Rüger <manuel@rueg.eu>  Tue, 24 Nov 2026 10:27:07 +0100
 
