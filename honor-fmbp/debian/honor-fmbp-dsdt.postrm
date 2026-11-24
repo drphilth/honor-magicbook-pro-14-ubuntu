@@ -12,6 +12,12 @@ case "$1" in
         ;;
 esac
 
+if [ "$1" = purge ]; then
+    # Admin-created settings (SKU force, removal opt-in); purge means forget them.
+    rm -f /etc/honor-fmbp/dsdt-force /etc/honor-fmbp/allow-dsdt-removal
+    rmdir /etc/honor-fmbp 2>/dev/null || true
+fi
+
 #DEBHELPER#
 
 exit 0

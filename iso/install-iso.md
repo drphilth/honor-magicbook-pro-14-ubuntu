@@ -5,6 +5,12 @@ abort that hides the NVMe drive and breaks the touchpad. So before installing, r
 ISO to carry the corrected DSDT (and a clean touchscreen). This is a one-command, fully reversible
 step — your current install is untouched, and you can rebuild/boot test ISOs freely.
 
+> **Turn Secure Boot off before booting this ISO** (firmware: F2 → set a supervisor password
+> if asked → Secure Boot → Disabled). The ISO's fix is an initrd ACPI table override, which
+> kernel lockdown under Secure Boot is designed to refuse; kernel 7.0 happens to apply it
+> anyway (see the README's [Secure Boot](../README.md#secure-boot) section), but if a kernel
+> ignores it the installer runs without NVMe and touchpad again.
+
 ## Build it
 
 ```bash
@@ -82,10 +88,17 @@ the NVMe root, so without this the first boot hangs. So:
    ```
 
    It finds the freshly-installed system, chroots it, and installs — **entirely offline, from a deb
-   repo baked on this ISO** — the boot-critical `honor-fmbp-dsdt` (which GNVS-detects your BIOS SKU
-   and bakes the right DSDT into the installed initramfs), the input/power quirks
+   repo baked on this ISO** — the boot-critical `honor-fmbp-dsdt` (which bakes the DSDT into the
+   installed initramfs), the input/power quirks
    (`honor-fmbp-config`), and the PPA apt source (`honor-fmbp-archive-keyring`). It verifies the DSDT
    actually landed in the installed initramfs before telling you it's safe to reboot.
+
+   It asks which **DSDT variant** to install: the live session runs the global table, so
+   the firmware's variant can't be detected from here. Keep the default, **global**, unless
+   you know the firmware is the Chinese variant (GNVS at `0x67E19018`). The variant is not
+   the sales region: units bought in China have needed the global table
+   ([colorcube#15](https://github.com/colorcube/Linux-on-Honor-Magicbook-14-Pro/issues/15)).
+   A Chinese answer is pinned in `/etc/honor-fmbp/dsdt-force` on the installed system. Non-interactive: `sudo SKU=chinese ASSUME_YES=1 …/honor-fmbp-install.sh`.
    *(If the installer already unmounted things, pass the root explicitly, e.g.
    `sudo mount /dev/nvme0n1p2 /mnt && sudo /media/cdrom/honor-fmbp/honor-fmbp-install.sh /mnt`.)*
 3. Reboot into the installed system — NVMe, touchpad and touchscreen work from boot #1.

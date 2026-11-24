@@ -59,8 +59,10 @@ sudo install -D -o root -g root -m 0644 "$RULE" \
   "$work/live-root/etc/udev/rules.d/$(basename "$RULE")"
 sudo test -f "$work/live-root/etc/udev/rules.d/$(basename "$RULE")" \
   || { echo "!! rule not staged in live-root"; exit 1; }
+# -Xbcj is an xz-only option: mksquashfs rejects it for zstd/lz4/gzip layers.
+bcj=(); [ "${comp:-xz}" = xz ] && bcj=(-Xbcj x86)
 sudo mksquashfs "$work/live-root" "$work/live-new.squashfs" \
-  -comp "${comp:-xz}" -b "${blk:-131072}" -Xbcj x86 -noappend -no-recovery \
+  -comp "${comp:-xz}" -b "${blk:-131072}" "${bcj[@]}" -noappend -no-recovery \
   -processors "$(nproc)" > "$work/mksq.log" 2>&1 \
   || { echo "!! mksquashfs FAILED:"; tail -8 "$work/mksq.log"; exit 1; }
 sudo chown "$(id -u):$(id -g)" "$work/live-new.squashfs"

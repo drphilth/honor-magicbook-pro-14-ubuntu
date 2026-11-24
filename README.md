@@ -54,9 +54,22 @@ one command, then a normal install with one extra step before the first reboot.
 
 If you already have Ubuntu running on this machine (i.e. you applied some DSDT
 workaround yourself, typically a GRUB ACPI override), just add the PPA and install the
-metapackage as at the top. `honor-fmbp-dsdt` detects your BIOS SKU and bakes the
-corrected table into the initramfs (initramfs-tools and dracut both supported) — after
-verifying a reboot, you can retire your hand-rolled override.
+metapackage as at the top. `honor-fmbp-dsdt` bakes the corrected table into the
+initramfs (initramfs-tools and dracut both supported).
+
+**Then remove your own override — it is not optional.** A table loaded by GRUB (an
+`acpi /dsdt.aml` line in `/etc/grub.d/40_custom`, or a custom early initrd via
+`GRUB_EARLY_INITRD_LINUX_CUSTOM` in `/etc/default/grub`) is what the kernel compares this
+package's table against, and it only applies ours if its OEM revision is *higher*.
+denis-bb's table carries `0x0b`, ours `0x03`, so until the GRUB entry is gone the old
+table stays in effect (no touchscreen fix). The package warns when it sees this. Delete
+or comment out that line, run `sudo update-grub`, and reboot; the package's initramfs
+already carries the fix, so the machine keeps booting.
+
+While your own override is active the BIOS SKU can't be read from firmware, so the
+package uses the variant your override carries and says so; if you know your firmware is
+the **Chinese variant** (not the same as bought in China, see below), force it first:
+`echo chinese | sudo tee /etc/honor-fmbp/dsdt-force`.
 
 ## Packages
 
@@ -65,7 +78,7 @@ One source package (`honor-fmbp`, in [`honor-fmbp/`](honor-fmbp/)) builds:
 | Package | Contents |
 |---|---|
 | `honor-magicbook-pro-14` | metapackage — everything below + `acpi-call-dkms`, `firmware-sof-signed`, `libpam-fprintd` |
-| `honor-fmbp-dsdt` | corrected DSDT (both SKUs), GNVS SKU auto-detect, initramfs-tools/dracut early-ACPI override |
+| `honor-fmbp-dsdt` | corrected DSDT (both SKUs), SKU auto-detect from stock firmware, initramfs-tools/dracut early-ACPI override |
 | `honor-fmbp-config` | input/device quirks (udev + hwdb), touchscreen toggle, battery-threshold unit + presets, battery-extension dconf defaults |
 | `honor-fmbp-hwmon-dkms` | fan-RPM hwmon driver (EC, reverse-engineered) |
 | `honor-fmbp-kbdlight-dkms` | keyboard-backlight LED driver (EC `KBBL`; native GNOME/KDE control) |
@@ -89,6 +102,10 @@ your own firmware dump): [`dsdt/`](dsdt/).
 The **global** variant is hardware-tested (this project's reference unit). The
 **Chinese** variant is built through the same pipeline but **unverified on real
 hardware** — if you own a Chinese-SKU unit, please test and report back in an issue.
+The variant is **not** the sales region: units bought in China have needed the global
+table ([colorcube#15](https://github.com/colorcube/Linux-on-Honor-Magicbook-14-Pro/issues/15));
+the NVS addresses are assigned by the firmware at boot and may follow the memory
+configuration. When in doubt, use global.
 
 ## Secure Boot
 
