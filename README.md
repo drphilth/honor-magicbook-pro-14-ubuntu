@@ -65,7 +65,7 @@ One source package (`honor-fmbp`, in [`honor-fmbp/`](honor-fmbp/)) builds:
 
 | Package | Contents |
 |---|---|
-| `honor-magicbook-pro-14` | metapackage — everything below + `acpi-call-dkms`, `firmware-sof-signed`, `libpam-fprintd` |
+| `honor-magicbook-pro-14` | metapackage — everything below + `firmware-sof-signed`, `libpam-fprintd` |
 | `honor-fmbp-dsdt` | corrected DSDT (both SKUs), GNVS SKU auto-detect, initramfs-tools/dracut early-ACPI override |
 | `honor-fmbp-config` | input/device quirks (udev + hwdb), touchscreen toggle, battery-threshold unit + presets, battery-extension dconf defaults |
 | `honor-fmbp-hwmon-dkms` | fan-RPM hwmon driver (EC, reverse-engineered) |

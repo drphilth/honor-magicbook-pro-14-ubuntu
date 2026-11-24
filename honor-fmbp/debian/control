@@ -86,7 +86,6 @@ Depends: honor-fmbp-hwmon-dkms (= ${source:Version}),
          honor-fmbp-dsdt (= ${source:Version}),
          honor-fmbp-config (= ${source:Version}),
          honor-fmbp-archive-keyring (= ${source:Version}),
-         acpi-call-dkms,
          firmware-sof-signed,
          libpam-fprintd,
          ${misc:Depends}
