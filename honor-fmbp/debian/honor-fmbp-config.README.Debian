@@ -12,7 +12,8 @@ are ignored) and does not remember it across reboots, so honor-battery-threshold
                         sudo systemctl restart honor-battery-thresholds.service
   Check it:            cat /sys/devices/platform/huawei-wmi/charge_control_thresholds
 
-Requires BIOS >= 1.16 (earlier firmware exposes the sysfs node but does not enforce it).
+Verified on BIOS 1.13 and 1.16. Pairs other than the three presets are accepted by
+sysfs but not enforced by the EC.
 
 Battery Quick Settings panel (optional)
 ---------------------------------------

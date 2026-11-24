@@ -10,12 +10,26 @@ DSDT early (initramfs early-cpio via CONFIG_ACPI_TABLE_UPGRADE), with the OEM
 revision bumped from 0x02 to 0x03 so the kernel accepts the override, and injects a
 PowerResource for the touchscreen.
 
+BIOS versions
+-------------
+BIOS 1.13 and 1.16 carry a byte-identical DSDT template. BIOS 1.17 fixes the NFC0
+load abort itself (the GNUM call moved from table load into NFC0._CRS) and changes
+nothing else in the DSDT; the touchscreen PowerResource is still missing there. The
+firmware fills in OEM revision 0x02 at boot on all three, so the shipped rev-0x03
+tables (built from 1.13) still apply and, since 1.17's only change is in code the
+override removes anyway, should behave the same. Not yet confirmed on 1.17 hardware:
+if the touchscreen stays dead on 1.17, rebuild from your own firmware with dsdt/build.sh
+(it detects the 1.17 NFC0 and bumps the revision above whatever the firmware reports).
+
 Two BIOS SKUs (global and Chinese)
 ----------------------------------
 The FMB-P shipped with two BIOS variants. Their DSDTs are logically identical but a
 handful of NVS regions (GNVS/SANB/VMNB/PNVB/OGNS/MDBG) sit 0x00100000 higher on the
 Chinese unit. Applying the wrong variant would point the ACPI override at the wrong
-memory, so both corrected tables are shipped:
+memory, so both corrected tables are shipped. (The NVS bases are assigned by the
+firmware at boot, so the split may really follow the memory configuration rather
+than the region; the detection matches the address itself, so it picks correctly
+either way.)
 
   /usr/share/honor-fmbp/dsdt.global.aml    (hardware-verified)
   /usr/share/honor-fmbp/dsdt.chinese.aml   (UNTESTED on real Chinese hardware)

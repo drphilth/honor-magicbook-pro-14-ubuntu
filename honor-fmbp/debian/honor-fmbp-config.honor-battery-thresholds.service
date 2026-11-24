@@ -2,7 +2,7 @@
 Description=Restore battery charge thresholds (HONOR FMB-P)
 Documentation=file:/usr/share/doc/honor-fmbp-config/README.Debian
 After=systemd-modules-load.service
-# huawei-wmi only exposes this on the FMB-P (and only enforces on BIOS >= 1.16);
+# huawei-wmi only exposes this on the FMB-P (the EC enforces only the OEM preset pairs);
 # the unit no-ops cleanly elsewhere.
 ConditionPathExists=/sys/devices/platform/huawei-wmi/charge_control_thresholds
 

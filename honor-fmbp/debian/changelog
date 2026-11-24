@@ -1,3 +1,27 @@
+honor-fmbp (1.0.6) UNRELEASED; urgency=medium
+
+  * honor-fmbp-config: new 61-honor-fmbp-touchpad-ghost.hwdb maps the
+    Goodix GXT7863 touchpad's vendor HID usages (ff010003/ff010004
+    brightness, ff010001 mic-mute) to reserved. The device sends a press
+    without a release, so the kernel autorepeats it at ~30 Hz: the backlight
+    jumps between 0 and 100%, and after resume the microphone toggles until
+    another key is pressed. The real F7 mic-mute arrives via huawei-wmi.
+    (Brightness: nikube, #2; mic-mute: colorcube.)
+  * honor-fmbp-config: keyboard hwdb is now matched to svnHONOR:pnFMB-P only
+    (was every HONOR machine) and also silences atkbd scancode f8, sent with
+    Fn+F1/F2/F3/F5/F7/F8/F10/F11. (colorcube)
+  * honor-fmbp-config: charge-limit docs no longer claim BIOS >= 1.16 is
+    required; the presets are enforced on BIOS 1.13 as well (colorcube).
+  * honor-fmbp-dsdt: README.Debian documents BIOS 1.17 (fixes the NFC0 load
+    abort in firmware, still lacks the touchscreen PowerResource) and that
+    the global/Chinese NVS split may follow the memory configuration.
+  * dsdt/build.sh (not packaged): BIOS 1.17 aware. Only removes a GNUM call
+    that runs at table load (NFC0 body depth), leaving the one 1.17 moved
+    into NFC0._CRS; bumps the OEM revision to firmware revision + 1 instead
+    of hard-coding 0x02 -> 0x03; refuses an already-patched input table.
+
+ -- Manuel Rüger <manuel@rueg.eu>  Tue, 24 Nov 2026 10:27:07 +0100
+
 honor-fmbp (1.0.5) resolute; urgency=medium
 
   * honor-fmbp-hwmon-dkms, honor-fmbp-kbdlight-dkms: ship a modules-load.d
