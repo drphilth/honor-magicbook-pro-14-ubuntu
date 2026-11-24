@@ -166,6 +166,38 @@ elif [ "$remove" = 1 ] || [ -z "$cur" ]; then
     rm -rf "$ACPIDIR"                               # no dir => dracut's acpi_override guard skips
 fi
 
+# A DSDT loaded by GRUB — its `acpi` command, or a custom early initrd via
+# GRUB_EARLY_INITRD_LINUX_CUSTOM (the usual hand-rolled workaround) — becomes the table
+# our initrd override is compared against, and the kernel only applies an override with
+# a HIGHER OEM revision. denis-bb's table carries 0x0b, ours 0x03: ours would be silently
+# ignored (no touchscreen fix). Warn; editing the admin's GRUB config is left to them.
+rev_of() { od -An -tu4 -j24 -N4 "$1" 2>/dev/null | tr -d ' '; }
+if [ -n "$sku" ]; then
+    grub_hits=""
+    for f in /etc/grub.d/*_custom /boot/grub/custom.cfg; do
+        [ -f "$f" ] && grep -Eq '^[[:space:]]*acpi[[:space:]]' "$f" && grub_hits="$grub_hits $f"
+    done
+    for f in /etc/default/grub /etc/default/grub.d/*.cfg; do
+        [ -f "$f" ] && grep -Eq "^[[:space:]]*GRUB_EARLY_INITRD_LINUX_CUSTOM=[\"']?[^\"'[:space:]]" "$f" \
+            && grub_hits="$grub_hits $f"
+    done
+    ours_rev=$(rev_of "$SHARE/dsdt.$sku.aml"); live_rev=$(rev_of "$TABLE")
+    shadowed=0
+    if [ -n "$HEX" ] && [ -n "$ours_rev" ] && [ -n "$live_rev" ] && live_is_override \
+       && [ "$live_rev" -ge "$ours_rev" ] \
+       && ! { has '54 44 5f 50' && [ "$live_rev" -eq "$ours_rev" ]; }; then
+        shadowed=1     # a foreign override at >= our revision (ours or colorcube's at = is fine)
+    fi
+    if [ "$shadowed" = 1 ] || [ -n "$grub_hits" ]; then
+        warn "another DSDT override is loaded before this package's (OEM revision live: ${live_rev:-?},"
+        warn "ours: ${ours_rev:-?}). The kernel applies ours only if its revision is higher, so"
+        warn "the corrected table (incl. the touchscreen fix) may be IGNORED."
+        [ -n "$grub_hits" ] && warn "GRUB loads a table via:$grub_hits"
+        warn "Remove that GRUB 'acpi' line / GRUB_EARLY_INITRD_LINUX_CUSTOM entry, run"
+        warn "'sudo update-grub' and reboot. This package's initramfs already carries the fix."
+    fi
+fi
+
 # Rebuild the initramfs so the change takes effect. On Ubuntu both generators are
 # mutually exclusive and the active one owns update-initramfs (dracut ships a shim),
 # so this single call is generator-agnostic; fall back to dracut directly if only
