@@ -1,3 +1,15 @@
+honor-fmbp (1.0.6) UNRELEASED; urgency=medium
+
+  * honor-fmbp-archive-keyring: remove the source file add-apt-repository
+    created for the same PPA (drphilth-ubuntu-honor-fmbp-*.sources/.list)
+    in preinst. Since 1.0.3 the metapackage pulls in this package's own
+    honor-fmbp.sources; with both present apt refuses to read the source
+    list ("Conflicting values set for option Signed-By") and every later
+    apt update fails. Other files that mention the PPA are reported, not
+    edited. (Upstream issue #1.)
+
+ -- Manuel Rüger <manuel@rueg.eu>  Tue, 24 Nov 2026 12:20:26 +0100
+
 honor-fmbp (1.0.5) resolute; urgency=medium
 
   * honor-fmbp-hwmon-dkms, honor-fmbp-kbdlight-dkms: ship a modules-load.d

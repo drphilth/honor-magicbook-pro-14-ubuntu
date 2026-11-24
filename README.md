@@ -8,6 +8,19 @@ sudo add-apt-repository ppa:drphilth/honor-fmbp
 sudo apt install honor-magicbook-pro-14
 ```
 
+> **`apt update` fails with "Conflicting values set for option Signed-By"?** Packages
+> up to 1.0.5 left the PPA configured twice (once by `add-apt-repository`, once by
+> `honor-fmbp-archive-keyring`). Remove the `add-apt-repository` copy — the package's
+> own `honor-fmbp.sources` stays and covers the same repository:
+>
+> ```bash
+> sudo rm /etc/apt/sources.list.d/drphilth-ubuntu-honor-fmbp-*
+> sudo apt update
+> ```
+>
+> From 1.0.6 the package removes that copy itself on install. Don't re-run
+> `add-apt-repository` for this PPA once the package is installed.
+
 Out of the box this laptop **cannot even boot an installer usefully**: a load-time abort
 in the OEM ACPI DSDT hides the NVMe drive and kills the touchpad. This repo ships the
 corrected DSDT plus everything else the hardware needs, packaged so it stays applied

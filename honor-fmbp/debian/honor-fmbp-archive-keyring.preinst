@@ -1,0 +1,42 @@
+#!/bin/sh
+set -e
+
+# This package ships /etc/apt/sources.list.d/honor-fmbp.sources (Signed-By:
+# /usr/share/keyrings/honor-fmbp-ppa.gpg). The README's first step,
+# `add-apt-repository ppa:drphilth/honor-fmbp`, writes its own source for the
+# same URI and suite with the key inline. apt refuses two entries for one
+# source with different Signed-By values, so every later `apt update` failed
+# with "Conflicting values set for option Signed-By" until one file was
+# deleted by hand.
+#
+# Remove the add-apt-repository copy: it describes the same repository and
+# key, and ours replaces it. Only files with add-apt-repository's naming
+# scheme are touched (they hold nothing but this PPA); any other file that
+# mentions the PPA is reported, not edited.
+
+SRCDIR=/etc/apt/sources.list.d
+PPA_RE='ppa\.launchpad(content)?\.net/drphilth/honor-fmbp'
+
+case "$1" in
+    install|upgrade)
+        for f in "$SRCDIR"/drphilth-ubuntu-honor-fmbp-*.sources \
+                 "$SRCDIR"/drphilth-ubuntu-honor-fmbp-*.list; do
+            [ -f "$f" ] || continue
+            rm -f "$f"
+            echo "honor-fmbp-archive-keyring: removed $f (same PPA as $SRCDIR/honor-fmbp.sources;" \
+                 "keeping both makes apt fail with conflicting Signed-By)" >&2
+        done
+        for f in "$SRCDIR"/*.sources "$SRCDIR"/*.list; do
+            [ -f "$f" ] || continue
+            [ "$f" = "$SRCDIR/honor-fmbp.sources" ] && continue
+            if grep -Eq "^[^#]*$PPA_RE" "$f"; then
+                echo "honor-fmbp-archive-keyring: WARNING: $f also points at ppa:drphilth/honor-fmbp;" \
+                     "remove that entry, or apt update will fail with conflicting Signed-By" >&2
+            fi
+        done
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0
