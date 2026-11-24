@@ -171,7 +171,7 @@ Added before the `linux` line: `insmod exfat; search --set=mbdev --file /dsdt.am
 acpi ($mbdev)/dsdt.aml`. Result: **touchpad works**, `verify.sh` reports DSDT OEM
 revision **3** (our table is live), GINF/load-failure lines **0**. GRUB's `acpi`
 command works on this UEFI → the remaster can use a simple `acpi /dsdt.aml` in the
-ISO's grub.cfg. (Ventoy `conf_replace` is NOT honored here — see `boot/ventoy-conf/`.)
+ISO's grub.cfg. (Ventoy `conf_replace` is NOT honored here.)
 
 ### Post-fix ACPI error survey (7 benign "could not resolve symbol", down from dozens)
 
