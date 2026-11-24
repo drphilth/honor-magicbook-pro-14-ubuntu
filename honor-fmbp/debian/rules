@@ -44,6 +44,7 @@ execute_before_dh_gencontrol:
 	test -x debian/honor-fmbp-config/usr/bin/honor-fmbp-touchscreen-toggle
 	test -s debian/honor-fmbp-config/usr/lib/udev/rules.d/99-honor-fmbp-touchscreen.rules
 	test -s debian/honor-fmbp-config/usr/lib/udev/hwdb.d/61-honor-fmbp-keyboard.hwdb
+	test -s debian/honor-fmbp-config/usr/lib/udev/hwdb.d/61-honor-fmbp-touchpad-ghost.hwdb
 	test -s debian/honor-fmbp-config/etc/default/honor-fmbp-battery
 	test -s debian/honor-fmbp-config/etc/dconf/db/local.d/00-honor-fmbp-battery
 	# Keyring payload is only staged when the real key is present (see -N above).
