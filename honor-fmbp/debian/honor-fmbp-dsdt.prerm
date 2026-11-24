@@ -1,0 +1,46 @@
+#!/bin/sh
+set -e
+
+# Removing this package drops the corrected DSDT from the next initramfs. On an
+# FMB-P whose firmware still aborts the DSDT load (BIOS 1.13/1.16) the machine
+# then boots without NVMe, i.e. it does not boot at all. That is easy to do by
+# accident: removing the honor-magicbook-pro-14 metapackage leaves this package
+# auto-installed and `apt autoremove` takes it with it.
+#
+# So on an FMB-P with an active selection, refuse unless the admin opts in.
+# Upgrades ("upgrade") are unaffected; only an actual removal is checked.
+
+ALLOW=/etc/honor-fmbp/allow-dsdt-removal
+
+case "$1" in
+    remove)
+        vendor=$(cat /sys/class/dmi/id/sys_vendor 2>/dev/null || true)
+        product=$(cat /sys/class/dmi/id/product_name 2>/dev/null || true)
+        if [ "$vendor" = HONOR ] && [ "$product" = FMB-P ] \
+           && [ -L /usr/share/honor-fmbp/dsdt.aml ] \
+           && [ ! -e "$ALLOW" ] && [ "${HONOR_FMBP_ALLOW_DSDT_REMOVAL:-0}" != 1 ]; then
+            cat >&2 <<EOF
+
+honor-fmbp-dsdt: REFUSING to remove the corrected DSDT on this HONOR FMB-P.
+
+  Without it the next initramfs has no DSDT override. On BIOS 1.13/1.16 the
+  stock table aborts loading and the machine boots WITHOUT NVMe (no root
+  filesystem); on 1.17 the touchscreen stops working.
+
+  If you removed honor-magicbook-pro-14, keep this package installed:
+      sudo apt-mark manual honor-fmbp-dsdt
+
+  If you really want it gone (BIOS 1.17 without touchscreen, another override
+  in place, or the disk is moving to other hardware):
+      sudo mkdir -p /etc/honor-fmbp && sudo touch $ALLOW
+  then retry the removal.
+
+EOF
+            exit 1
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0
