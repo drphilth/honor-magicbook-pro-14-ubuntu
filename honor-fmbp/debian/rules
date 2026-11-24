@@ -37,6 +37,8 @@ execute_before_dh_gencontrol:
 	test -x debian/honor-fmbp-dsdt/usr/share/initramfs-tools/hooks/honor-fmbp-dsdt
 	test -s debian/honor-fmbp-hwmon-dkms/usr/src/honor-fmbp-hwmon-1.0/dkms.conf
 	test -s debian/honor-fmbp-kbdlight-dkms/usr/src/honor-fmbp-kbdlight-1.1/dkms.conf
+	test -s debian/honor-fmbp-huawei-wmi-dkms/usr/src/honor-fmbp-huawei-wmi-7.0.1/dkms.conf
+	test -s debian/honor-fmbp-huawei-wmi-dkms/usr/src/honor-fmbp-huawei-wmi-7.0.1/huawei-wmi.c
 	# Both modules lack a device modalias, so each DKMS package must ship a
 	# modules-load.d drop-in or the driver never loads on a clean boot (1.0.5 fix).
 	test -s debian/honor-fmbp-hwmon-dkms/usr/lib/modules-load.d/honor-fmbp-hwmon.conf

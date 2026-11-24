@@ -31,7 +31,7 @@ With these packages, effectively everything:
 | Fan RPM readout (`sensors`) | ✅ `honor-fmbp-hwmon-dkms` (custom EC driver) |
 | Keyboard backlight (GNOME Quick Settings, off/low/high) | ✅ `honor-fmbp-kbdlight-dkms` (custom EC driver; re-login once after install) |
 | Battery charge-limit presets (40–70 / 70–90 / 95–100) | ✅ `honor-fmbp-config` (huawei-wmi + restore unit; BIOS ≥ 1.16) |
-| Fn keys, LEDs, keyboard quirks | ✅ native on kernel 7.0 + a small hwdb fix |
+| Fn keys, LEDs, keyboard quirks | ✅ native on kernel 7.0 + a small hwdb fix; F3/F8/Fn+P/Fn+R and no "Unknown key" log spam with the optional `honor-fmbp-huawei-wmi-dkms` |
 | Fingerprint (EgisTec ET171, SDCP/Windows-Hello match-on-chip) | ✅ [`honor-fmbp-libfprint-sdcp`](https://github.com/drphilth/honor-fmbp-libfprint-sdcp) (pulled in via Recommends) |
 
 ## Installing
@@ -68,11 +68,34 @@ One source package (`honor-fmbp`, in [`honor-fmbp/`](honor-fmbp/)) builds:
 | `honor-fmbp-dsdt` | corrected DSDT (both SKUs), GNVS SKU auto-detect, initramfs-tools/dracut early-ACPI override |
 | `honor-fmbp-config` | input/device quirks (udev + hwdb), touchscreen toggle, battery-threshold unit + presets, battery-extension dconf defaults |
 | `honor-fmbp-hwmon-dkms` | fan-RPM hwmon driver (EC, reverse-engineered) |
+| `honor-fmbp-huawei-wmi-dkms` | *optional* — huawei-wmi (mainline v7.0) with the FMB-P hotkey codes; see [Optional: FMB-P hotkeys](#optional-fmb-p-hotkeys-huawei-wmi) |
 | `honor-fmbp-kbdlight-dkms` | keyboard-backlight LED driver (EC `KBBL`; native GNOME/KDE control) |
 | `honor-fmbp-archive-keyring` | the PPA's apt source + signing key (lets the offline installer "add the PPA" with no network) |
 
 Build locally with `cd honor-fmbp && dpkg-buildpackage -us -uc -b` (needs
 `debhelper`, `dh-dkms`).
+
+## Optional: FMB-P hotkeys (huawei-wmi)
+
+The in-tree `huawei-wmi` driver doesn't know several FMB-P WMI codes: F3 (touchpad
+on/off), F8 (camera access), Fn+P (performance mode) and Fn+R (refresh rate) do nothing,
+and EC notifications log `Unknown key pressed` hundreds of times per boot.
+`honor-fmbp-huawei-wmi-dkms` replaces the driver with the same mainline source plus those
+codes (keymap from [colorcube's collection](https://github.com/colorcube/Linux-on-Honor-Magicbook-14-Pro/tree/main/fixes/huawei-wmi-dkms)):
+
+```bash
+sudo apt install honor-fmbp-huawei-wmi-dkms
+sudo modprobe -r huawei_wmi && sudo modprobe huawei_wmi    # or reboot
+journalctl -k -b | grep -c "Unknown key pressed"          # should stay at 0
+```
+
+It is opt-in because it **replaces an in-tree driver**:
+- It is only built for 7.0 kernels; on other kernels DKMS skips it and the stock driver
+  is used, so it can never shadow newer upstream fixes.
+- Under **Secure Boot** it must be signed with an enrolled MOK (see [Secure Boot](#secure-boot)),
+  otherwise `huawei-wmi` doesn't load at all and the battery charge limit is lost.
+- The keys arrive as standard key events; whether the desktop acts on them (e.g. an OSD
+  for F8, anything for `KEY_PROG1`) depends on the desktop's own bindings.
 
 ## The DSDT fix
 
