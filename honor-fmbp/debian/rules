@@ -37,8 +37,8 @@ execute_before_dh_gencontrol:
 	test -x debian/honor-fmbp-dsdt/usr/share/initramfs-tools/hooks/honor-fmbp-dsdt
 	test -s debian/honor-fmbp-hwmon-dkms/usr/src/honor-fmbp-hwmon-1.0/dkms.conf
 	test -s debian/honor-fmbp-kbdlight-dkms/usr/src/honor-fmbp-kbdlight-1.1/dkms.conf
-	# Both modules lack a device modalias, so each DKMS package must ship a
-	# modules-load.d drop-in or the driver never loads on a clean boot (1.0.5 fix).
+	# Each DKMS package ships a modules-load.d drop-in so the driver loads on a
+	# clean boot (1.0.5 fix), kept until the DMI-modalias autoload is verified.
 	test -s debian/honor-fmbp-hwmon-dkms/usr/lib/modules-load.d/honor-fmbp-hwmon.conf
 	test -s debian/honor-fmbp-kbdlight-dkms/usr/lib/modules-load.d/honor-fmbp-kbdlight.conf
 	test -x debian/honor-fmbp-config/usr/bin/honor-fmbp-touchscreen-toggle
