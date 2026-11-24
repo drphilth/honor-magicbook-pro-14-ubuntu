@@ -55,15 +55,23 @@ ls "$REPO"/honor-fmbp-dsdt_*.deb >/dev/null 2>&1 \
   || { echo "!! no Packages index in $REPO — run dpkg-scanpackages there, or build via build-install-iso.sh"; exit 1; }
 
 # ---- locate the installed root -------------------------------------------------
-# A valid target: has /etc/os-release + /boot + /usr/bin, an installed kernel,
-# and is NOT the running live system ('/').
+# fstab source of the target's separate /boot ("" if /boot is on the root fs).
+boot_src() {
+  findmnt --fstab --tab-file "$1/etc/fstab" -no SOURCE --mountpoint /boot 2>/dev/null \
+    | head -1 || true
+}
+
+# A valid target: has /etc/os-release + /usr/bin, an installed kernel (in /boot,
+# or a separate /boot partition listed in its fstab), and is NOT the running
+# live system ('/').
 valid_root() {
   local r="$1"
   [ -n "$r" ] && [ -d "$r" ] || return 1
   [ "$(readlink -f "$r")" != / ] || return 1
   [ -e "$r/etc/os-release" ] && [ -d "$r/usr/bin" ] || return 1
-  ls "$r"/boot/vmlinuz-* >/dev/null 2>&1 || return 1
-  return 0
+  ls "$r"/boot/vmlinuz-* >/dev/null 2>&1 && return 0
+  [ -n "$(boot_src "$r")" ] && return 0
+  return 1
 }
 
 # Mount a block device's ROOT filesystem at a fresh temp dir (handles the btrfs
@@ -85,6 +93,10 @@ mount_root_dev() {
 # from auto-detection so we can never target the live/host system by mistake.
 RUNROOT_SRC="$(findmnt -no SOURCE / 2>/dev/null | sed 's/\[.*//')"
 SELF_MOUNTED=""   # set to a mountpoint if WE mounted the target (so cleanup unmounts it)
+BOOT_MOUNTED=""   # set if WE mounted the target's separate /boot
+# Until the full cleanup trap below is installed: never leave our own mount behind
+# (e.g. when the selected device turns out not to be a valid root).
+trap '[ -n "$SELF_MOUNTED" ] && { umount "$SELF_MOUNTED" 2>/dev/null; rmdir "$SELF_MOUNTED" 2>/dev/null; }' EXIT
 
 arg="${1:-}"
 if [ -n "$arg" ] && [ -b "$arg" ]; then
@@ -100,10 +112,11 @@ elif valid_root /target; then
 else
   echo ">> installer left no /target — scanning for installed Ubuntu roots"
   echo "   (the running system, $RUNROOT_SRC, is excluded)"
-  devs=(); descs=()
-  while read -r name fstype; do
+  devs=(); descs=(); luks=()
+  # PATH (not /dev/NAME): LVM volumes live at /dev/mapper/<vg>-<lv>.
+  while read -r dev fstype; do
+    [ "$fstype" = crypto_LUKS ] && { luks+=("$dev"); continue; }
     case "$fstype" in ext4|btrfs|xfs) ;; *) continue ;; esac
-    dev="/dev/$name"
     [ "$dev" = "$RUNROOT_SRC" ] && continue
     mp="$(mount_root_dev "$dev" ro)" || continue
     if valid_root "$mp"; then
@@ -115,7 +128,13 @@ else
       descs+=("$dev  $sz  ${tran:+$tran }${model:-?}  —  ${pretty:-Linux}${instdate:+  (installed $instdate)}")
     fi
     umount "$mp" 2>/dev/null; rmdir "$mp" 2>/dev/null
-  done < <(lsblk -rno NAME,FSTYPE | awk 'NF==2')
+  done < <(lsblk -rno PATH,FSTYPE | awk 'NF==2')
+  if [ "${#luks[@]}" -gt 0 ]; then
+    echo "   encrypted (LUKS) partitions: ${luks[*]}"
+    echo "   An encrypted install is only found once unlocked, e.g.:"
+    echo "     sudo cryptsetup open ${luks[0]} target_crypt   # then, for LVM: sudo vgchange -ay"
+    echo "   and re-run this script (or pass the unlocked root device as TARGET)."
+  fi
   [ "${#devs[@]}" -gt 0 ] || {
     echo "!! no installed Ubuntu root found (excluding this running system)."
     echo "   Pass the target device explicitly, e.g.:  sudo $0 /dev/sda2"; exit 1; }
@@ -146,12 +165,25 @@ cleanup() {
   for m in /run /sys /proc /dev/pts /dev; do
     mountpoint -q "$TARGET$m" && umount -l "$TARGET$m" 2>/dev/null
   done
+  [ -n "$BOOT_MOUNTED" ] && umount "$BOOT_MOUNTED" 2>/dev/null
   if [ -n "$SELF_MOUNTED" ]; then          # unmount the target only if WE mounted it
     umount "$SELF_MOUNTED" 2>/dev/null || umount -l "$SELF_MOUNTED" 2>/dev/null
     rmdir "$SELF_MOUNTED" 2>/dev/null
   fi
 }
 trap cleanup EXIT
+
+# A separate /boot must be mounted, or the initramfs (and the DSDT in it) would be
+# written into the root filesystem's empty /boot directory instead of the one the
+# bootloader reads.
+bsrc="$(boot_src "$TARGET")"
+if [ -n "$bsrc" ] && ! mountpoint -q "$TARGET/boot"; then
+  echo ">> mounting the target's separate /boot ($bsrc)"
+  mount "$bsrc" "$TARGET/boot" || { echo "!! could not mount /boot ($bsrc) from the target's fstab"; exit 1; }
+  BOOT_MOUNTED="$TARGET/boot"
+fi
+ls "$TARGET"/boot/vmlinuz-* >/dev/null 2>&1 \
+  || { echo "!! no kernel in $TARGET/boot — is this the right installed system?"; exit 1; }
 
 # ---- CONFIRM the target before writing anything --------------------------------
 TARGET_DEV="$(findmnt -no SOURCE --target "$TARGET" 2>/dev/null | sed 's/\[.*//')"
